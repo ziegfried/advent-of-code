@@ -2,6 +2,30 @@
 
 My solutions to [Advent of Code](https://adventofcode.com/) problems. Written in Rust. Each problem is in it's own folder as a cargo package with a binary target.
 
+## Solutions
+
+<!-- INDEX-START -->
+<details><summary>2020</summary>
+<p>
+
+ - [Day 1](./2020/day1/src/main.rs)
+ - [Day 2](./2020/day2/src/main.rs)
+ - [Day 3](./2020/day3/src/main.rs)
+ - [Day 4](./2020/day4/src/main.rs)
+ - [Day 5](./2020/day5/src/main.rs)
+ - [Day 6](./2020/day6/src/main.rs)
+ - [Day 7](./2020/day7/src/main.rs)
+ - [Day 8](./2020/day8/src/main.rs)
+ - [Day 9](./2020/day9/src/main.rs)
+ - [Day 10](./2020/day10/src/main.rs)
+ - [Day 11](./2020/day11/src/main.rs)
+ - [Day 12](./2020/day12/src/main.rs)
+ - [Day 13](./2020/day13/src/main.rs)
+
+</p>
+</details>
+<!-- INDEX-END -->
+
 ## Run
 
 To run the solutions you'll need to have [Rust set up on your machine](https://rustup.rs/). The simplest way to execute a problem solution is to run `cargo run` in a solution folder.
