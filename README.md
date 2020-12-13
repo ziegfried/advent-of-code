@@ -5,6 +5,25 @@ My solutions to [Advent of Code](https://adventofcode.com/) problems. Written in
 ## Solutions
 
 <!-- INDEX-START -->
+<details><summary>2015</summary>
+<p>
+
+ - [Day 1](./2015/day1/src/main.rs)
+ - [Day 2](./2015/day2/src/main.rs)
+ - [Day 3](./2015/day3/src/main.rs)
+ - [Day 4](./2015/day4/src/main.rs)
+ - [Day 5](./2015/day5/src/main.rs)
+ - [Day 6](./2015/day6/src/main.rs)
+ - [Day 7](./2015/day7/src/main.rs)
+ - [Day 8](./2015/day8/src/main.rs)
+ - [Day 9](./2015/day9/src/main.rs)
+ - [Day 10](./2015/day10/src/main.rs)
+ - [Day 11](./2015/day11/src/main.rs)
+ - [Day 12](./2015/day12/src/main.rs)
+ - [Day 25](./2015/day25/src/main.rs)
+
+</p>
+</details>
 <details><summary>2020</summary>
 <p>
 
