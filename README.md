@@ -20,6 +20,8 @@ My solutions to [Advent of Code](https://adventofcode.com/) problems. Written in
  - [Day 10](./2015/day10/src/main.rs)
  - [Day 11](./2015/day11/src/main.rs)
  - [Day 12](./2015/day12/src/main.rs)
+ - [Day 13](./2015/day13/src/main.rs)
+ - [Day 14](./2015/day14/src/main.rs)
  - [Day 25](./2015/day25/src/main.rs)
 
 </p>
