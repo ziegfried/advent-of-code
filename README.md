@@ -24,6 +24,7 @@ My solutions to [Advent of Code](https://adventofcode.com/) problems. Written in
  - [Day 14](./2015/day14/src/main.rs)
  - [Day 15](./2015/day15/src/main.rs)
  - [Day 16](./2015/day16/src/main.rs)
+ - [Day 17](./2015/day17/src/main.rs)
  - [Day 25](./2015/day25/src/main.rs)
 
 </p>
