@@ -1,0 +1,22 @@
+name: Update Index
+on:
+    push:
+        branches:
+            - main
+jobs:
+    update:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
+            - uses: actions/setup-node@v2
+              with:
+                  node-version: 16.x
+            - run: node scripts/generate_index.js
+            - name: push changes
+              run: |
+                  git config --global user.name 'Siegfried Puchbauer'
+                  git config --global user.email 'ziegfried@users.noreply.github.com'
+                  git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/$GITHUB_REPOSITORY
+                  git checkout main
+                  git commit -am "update index" || echo "no changes?"
+                  git push origin main
