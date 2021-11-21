@@ -7,7 +7,7 @@ function generate() {
     const readmeContents = fs.readFileSync(readmePath, { encoding: 'utf-8' });
     const contents = [];
     const years = fs.readdirSync(basePath).filter((name) => /^\d+$/.test(name));
-    years.sort();
+    years.sort((a, b) => +b - +a);
     for (const year of years) {
         contents.push(`<details><summary>${year}</summary>\n<p>\n`);
         const days = fs
