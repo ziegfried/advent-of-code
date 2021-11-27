@@ -36,6 +36,23 @@ My solutions to [Advent of Code](https://adventofcode.com/) problems. Written in
 
 </p>
 </details>
+<details><summary>2019</summary>
+<p>
+
+ - [Day 1](./2019/day1/src/main.rs)
+ - [Day 2](./2019/day2/src/main.rs)
+ - [Day 3](./2019/day3/src/main.rs)
+ - [Day 4](./2019/day4/src/main.rs)
+ - [Day 5](./2019/day5/src/main.rs)
+ - [Day 6](./2019/day6/src/main.rs)
+ - [Day 7](./2019/day7/src/main.rs)
+ - [Day 8](./2019/day8/src/main.rs)
+ - [Day 9](./2019/day9/src/main.rs)
+ - [Day 10](./2019/day10/src/main.rs)
+ - [Day 11](./2019/day11/src/main.rs)
+
+</p>
+</details>
 <details><summary>2015</summary>
 <p>
 
