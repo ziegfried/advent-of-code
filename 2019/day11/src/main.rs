@@ -1,6 +1,7 @@
 mod intcode;
-use std::cmp;
 use std::collections::HashMap;
+use std::ops::RangeInclusive;
+use std::{cmp, ops};
 
 use intcode::{parse_program, IntcodeComputer};
 
@@ -16,7 +17,15 @@ enum Turn {
     Right,
 }
 
-type Point = (i32, i32);
+#[derive(Debug, Clone, Copy, PartialEq, Hash)]
+struct Point(i32, i32);
+impl Eq for Point {}
+impl ops::Add<Point> for Point {
+    type Output = Point;
+    fn add(self, rhs: Point) -> Point {
+        Point(self.0 + rhs.0, self.1 + rhs.1)
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum Direction {
@@ -25,7 +34,6 @@ enum Direction {
     South,
     West,
 }
-
 impl Direction {
     fn turn(&self, turn: Turn) -> Direction {
         if turn == Turn::Left {
@@ -40,22 +48,9 @@ impl Direction {
     }
 }
 
-fn add(a: Point, b: Point) -> Point {
-    (a.0 + b.0, a.1 + b.1)
-}
-
-fn move_in(direction: Direction) -> Point {
-    match direction {
-        Direction::North => (-1, 0),
-        Direction::East => (0, 1),
-        Direction::South => (1, 0),
-        Direction::West => (0, -1),
-    }
-}
-
 fn run_robot_program(input: &str, hull: &mut HashMap<Point, Color>) {
     let program = parse_program(input);
-    let mut robot_loc: Point = (0, 0);
+    let mut robot_loc = Point(0, 0);
     let mut robot_dir = Direction::North;
     let mut computer = IntcodeComputer::create(program, vec![]);
 
@@ -82,7 +77,13 @@ fn run_robot_program(input: &str, hull: &mut HashMap<Point, Color>) {
         };
         hull.insert(robot_loc, next_color);
         robot_dir = robot_dir.turn(turn);
-        robot_loc = add(robot_loc, move_in(robot_dir));
+        robot_loc = robot_loc
+            + match robot_dir {
+                Direction::North => Point(-1, 0),
+                Direction::East => Point(0, 1),
+                Direction::South => Point(1, 0),
+                Direction::West => Point(0, -1),
+            };
     }
 }
 
@@ -92,30 +93,35 @@ fn part1(input: &str) -> usize {
     hull.len()
 }
 
+fn extend_range(a: RangeInclusive<i32>, b: RangeInclusive<i32>) -> RangeInclusive<i32> {
+    RangeInclusive::new(
+        cmp::min(*a.start(), *b.start()),
+        cmp::max(*a.end(), *b.end()),
+    )
+}
+
 fn part2(input: &str) -> String {
     let mut hull = HashMap::<Point, Color>::new();
-    hull.insert((0, 0), Color::White);
+    hull.insert(Point(0, 0), Color::White);
     run_robot_program(input, &mut hull);
-
-    let mut min_x: i32 = i32::MAX;
-    let mut min_y: i32 = i32::MAX;
-    let mut max_x: i32 = i32::MIN;
-    let mut max_y: i32 = i32::MIN;
-
-    for (x, y) in hull.keys() {
-        min_x = cmp::min(*x, min_x);
-        min_y = cmp::min(*y, min_y);
-        max_x = cmp::max(*x, max_x);
-        max_y = cmp::max(*y, max_y);
-    }
-
+    let x_range = hull
+        .keys()
+        .map(|Point(x, _)| *x..=*x)
+        .reduce(extend_range)
+        .unwrap();
+    let y_range = hull
+        .keys()
+        .map(|Point(_, y)| *y..=*y)
+        .reduce(extend_range)
+        .unwrap();
     let hull_ref = &hull;
-    (min_x..=max_x)
+    x_range
         .map(|x| {
-            (min_y..=max_y)
-                .map(move |y| match hull_ref.get(&(x, y)) {
-                    Some(Color::White) => '#',
-                    Some(Color::Black) => ' ',
+            y_range
+                .clone()
+                .map(move |y| match hull_ref.get(&Point(x, y)) {
+                    Some(Color::White) => '█',
+                    Some(Color::Black) => '.',
                     None => ' ',
                 })
                 .collect::<String>()
