@@ -1,24 +1,23 @@
-fn part1(input: &str) -> u32 {
+use itertools::Itertools;
+
+fn part1(input: &str) -> usize {
     input
         .split('\n')
         .map(|line| line.parse::<u32>().unwrap())
-        .collect::<Vec<_>>()
-        .windows(2)
-        .map(|values| if values[1] > values[0] { 1 } else { 0 })
-        .sum()
+        .tuple_windows::<(u32, u32)>()
+        .filter(|(a, b)| b > a)
+        .count()
 }
 
-fn part2(input: &str) -> u32 {
+fn part2(input: &str) -> usize {
     input
         .split('\n')
         .map(|line| line.parse::<u32>().unwrap())
-        .collect::<Vec<_>>()
-        .windows(3)
-        .map(|three_measures| three_measures.iter().sum())
-        .collect::<Vec<u32>>()
-        .windows(2)
-        .map(|values| if values[1] > values[0] { 1 } else { 0 })
-        .sum()
+        .tuple_windows::<(u32, u32, u32)>()
+        .map(|(a, b, c)| a + b + c)
+        .tuple_windows::<(u32, u32)>()
+        .filter(|(a, b)| b > a)
+        .count()
 }
 
 fn main() {
