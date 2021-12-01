@@ -5,6 +5,13 @@ My solutions to [Advent of Code](https://adventofcode.com/) problems. Written in
 ## Solutions
 
 <!-- INDEX-START -->
+<details><summary>2021</summary>
+<p>
+
+ - [Day 1](./2021/day1/src/main.rs)
+
+</p>
+</details>
 <details><summary>2020</summary>
 <p>
 
