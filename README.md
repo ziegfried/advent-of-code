@@ -9,6 +9,7 @@ My solutions to [Advent of Code](https://adventofcode.com/) problems. Written in
 <p>
 
  - [Day 1](./2021/day1/src/main.rs)
+ - [Day 2](./2021/day2/src/main.rs)
 
 </p>
 </details>
