@@ -18,47 +18,28 @@ fn parse_command(line: &str) -> Command {
 }
 
 fn part1(input: &str) -> i32 {
-    let commands = input.split('\n').map(parse_command);
-    let mut horizontal = 0;
-    let mut depth = 0;
-
-    for command in commands {
-        match command {
-            Forward(amount) => {
-                horizontal += amount;
-            }
-            Down(amount) => {
-                depth += amount;
-            }
-            Up(amount) => {
-                depth -= amount;
-            }
-        }
-    }
+    let (horizontal, depth) = input
+        .split('\n')
+        .map(parse_command)
+        .fold((0, 0), |(h, d), cmd| match cmd {
+            Forward(amount) => (h + amount, d),
+            Down(amount) => (h, d + amount),
+            Up(amount) => (h, d - amount),
+        });
 
     horizontal * depth
 }
 
 fn part2(input: &str) -> i32 {
-    let commands = input.split('\n').map(parse_command);
-    let mut horizontal = 0;
-    let mut depth = 0;
-    let mut aim = 0;
-
-    for command in commands {
-        match command {
-            Forward(amount) => {
-                horizontal += amount;
-                depth += aim * amount;
-            }
-            Down(amount) => {
-                aim += amount;
-            }
-            Up(amount) => {
-                aim -= amount;
-            }
-        }
-    }
+    let (horizontal, depth, _aim) =
+        input
+            .split('\n')
+            .map(parse_command)
+            .fold((0, 0, 0), |(h, d, a), cmd| match cmd {
+                Forward(amount) => (h + amount, d + a * amount, a),
+                Down(amount) => (h, d, a + amount),
+                Up(amount) => (h, d, a - amount),
+            });
 
     horizontal * depth
 }
