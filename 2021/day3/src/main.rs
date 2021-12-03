@@ -21,7 +21,7 @@ fn part1(input: &str) -> u32 {
     let epsilon = u32::from_str_radix(
         digit_counts
             .iter()
-            .map(|(z, o)| if z > o { '1' } else { '0' })
+            .map(|(z, o)| if o > z { '1' } else { '0' })
             .collect::<String>()
             .as_str(),
         2,
@@ -31,7 +31,7 @@ fn part1(input: &str) -> u32 {
     let gamma = u32::from_str_radix(
         digit_counts
             .iter()
-            .map(|(z, o)| if z > o { '0' } else { '1' })
+            .map(|(z, o)| if o > z { '0' } else { '1' })
             .collect::<String>()
             .as_str(),
         2,
@@ -58,7 +58,7 @@ fn part2(input: &str) -> u32 {
             break;
         }
     }
-    let o2gen_rating = u32::from_str_radix(o2_gen_candidates[0], 2).unwrap();
+    let o2_gen_rating = u32::from_str_radix(o2_gen_candidates[0], 2).unwrap();
 
     let mut co2_scrub_candidates = lines.clone();
     for i in 0..len {
@@ -75,8 +75,9 @@ fn part2(input: &str) -> u32 {
     }
     let co2_scrub_rating = u32::from_str_radix(co2_scrub_candidates[0], 2).unwrap();
 
-    o2gen_rating * co2_scrub_rating
+    o2_gen_rating * co2_scrub_rating
 }
+
 fn main() {
     println!("Part 1: {}", part1(include_str!("in.txt")));
     println!("Part 2: {}", part2(include_str!("in.txt")));
