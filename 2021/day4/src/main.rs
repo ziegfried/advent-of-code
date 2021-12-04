@@ -5,7 +5,7 @@ enum BoardItem {
 }
 impl Default for BoardItem {
     fn default() -> Self {
-        BoardItem::Called
+        BoardItem::Uncalled(0)
     }
 }
 use BoardItem::*;
@@ -15,9 +15,7 @@ struct Board([[BoardItem; 5]; 5]);
 impl Board {
     fn from_str(input: &str) -> Self {
         let mut board: [[BoardItem; 5]; 5] = Default::default();
-        let lines = input.split('\n');
-
-        for (x, line) in lines.enumerate() {
+        for (x, line) in input.split('\n').enumerate() {
             let numbers = line
                 .trim()
                 .split_whitespace()
@@ -26,7 +24,6 @@ impl Board {
                 board[x][y] = Uncalled(number);
             }
         }
-
         Board(board)
     }
     fn bingo(&self) -> bool {
@@ -52,10 +49,10 @@ impl Board {
         }
     }
     fn score(&self) -> usize {
-        (0..5)
-            .map(|x| {
-                self.0[x]
-                    .iter()
+        let rows = &self.0;
+        rows.iter()
+            .map(|row| {
+                row.iter()
                     .map(|item| match item {
                         Called => 0,
                         Uncalled(v) => *v,
@@ -66,22 +63,22 @@ impl Board {
     }
     #[allow(dead_code)]
     fn print(&self) {
-        let rows = &self.0;
-        for row in rows {
-            let line = row
-                .iter()
-                .map(|v| {
-                    format!(
-                        "{}",
-                        match v {
-                            Called => "XX".to_string(),
-                            Uncalled(v) => format!("{:2}", v),
-                        }
-                    )
-                })
-                .collect::<Vec<_>>()
-                .join(" ");
-            println!("{}", line);
+        for row in &self.0 {
+            println!(
+                "{}",
+                row.iter()
+                    .map(|v| {
+                        format!(
+                            "{}",
+                            match v {
+                                Called => "XX".to_string(),
+                                Uncalled(v) => format!("{:2}", v),
+                            }
+                        )
+                    })
+                    .collect::<Vec<_>>()
+                    .join(" ")
+            );
         }
     }
 }
