@@ -11,6 +11,7 @@ My solutions to [Advent of Code](https://adventofcode.com/) problems. Written in
  - [Day 1](./2021/day1/src/main.rs)
  - [Day 2](./2021/day2/src/main.rs)
  - [Day 3](./2021/day3/src/main.rs)
+ - [Day 4](./2021/day4/src/main.rs)
 
 </p>
 </details>
