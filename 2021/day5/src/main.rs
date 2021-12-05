@@ -2,8 +2,7 @@ use nom::{bytes::complete::tag, character::complete::i32, IResult};
 use std::collections::HashMap;
 
 type Point = (i32, i32);
-#[derive(Debug)]
-struct Line(Point, Point);
+type Line = (Point, Point);
 
 fn point(input: &str) -> IResult<&str, Point> {
     let (input, x) = i32(input)?;
@@ -16,7 +15,12 @@ fn line(input: &str) -> IResult<&str, Line> {
     let (input, a) = point(input)?;
     let (input, _) = tag(" -> ")(input)?;
     let (input, b) = point(input)?;
-    Ok((input, Line(a, b)))
+    Ok((input, (a, b)))
+}
+
+fn parse_line(input: &str) -> Line {
+    let (_, line) = line(input).unwrap();
+    line
 }
 
 fn step(a: i32, b: i32) -> i32 {
@@ -30,7 +34,7 @@ fn step(a: i32, b: i32) -> i32 {
 }
 
 fn draw_line(line: &Line, canvas: &mut HashMap<Point, usize>) {
-    let Line((x1, y1), (x2, y2)) = line;
+    let ((x1, y1), (x2, y2)) = line;
     let x_step = step(*x1, *x2);
     let y_step = step(*y1, *y2);
     let count = i32::max((x2 - x1).abs(), (y2 - y1).abs()) + 1;
@@ -51,13 +55,10 @@ fn draw_line(line: &Line, canvas: &mut HashMap<Point, usize>) {
 }
 
 fn part1(input: &str) -> usize {
-    let lines = input
-        .lines()
-        .map(|l| line(l).unwrap().1)
-        .collect::<Vec<_>>();
+    let lines = input.lines().map(parse_line).collect::<Vec<_>>();
     let mut canvas = HashMap::<Point, usize>::new();
     for line in lines {
-        let Line((x1, y1), (x2, y2)) = line;
+        let ((x1, y1), (x2, y2)) = line;
         if x1 == x2 || y1 == y2 {
             draw_line(&line, &mut canvas);
         }
@@ -66,10 +67,7 @@ fn part1(input: &str) -> usize {
 }
 
 fn part2(input: &str) -> usize {
-    let lines = input
-        .lines()
-        .map(|l| line(l).unwrap().1)
-        .collect::<Vec<_>>();
+    let lines = input.lines().map(parse_line).collect::<Vec<_>>();
     let mut canvas = HashMap::<Point, usize>::new();
     for line in lines {
         draw_line(&line, &mut canvas);
