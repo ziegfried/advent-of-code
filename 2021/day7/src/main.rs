@@ -1,35 +1,30 @@
-fn part1(input: &str) -> u64 {
+use itertools::Itertools;
+
+fn part1(input: &str) -> i64 {
     let positions = input
         .split(',')
-        .map(|n| n.parse::<u64>().unwrap())
+        .map(|n| n.parse::<i64>().unwrap())
         .collect::<Vec<_>>();
-    let min = *positions.iter().min().unwrap();
-    let max = *positions.iter().max().unwrap();
+    let (&min, &max) = positions.iter().minmax().into_option().unwrap();
     (min..=max)
-        .map(|i| {
-            positions
-                .iter()
-                .map(|&n| if n > i { n - i } else { i - n })
-                .sum::<u64>()
-        })
+        .map(|i| positions.iter().map(|&n| i64::abs(n - i)).sum::<i64>())
         .min()
         .unwrap()
 }
 
-fn part2(input: &str) -> u64 {
+fn part2(input: &str) -> i64 {
     let positions = input
         .split(',')
-        .map(|n| n.parse::<u64>().unwrap())
+        .map(|n| n.parse::<i64>().unwrap())
         .collect::<Vec<_>>();
-    let min = *positions.iter().min().unwrap();
-    let max = *positions.iter().max().unwrap();
+    let (&min, &max) = positions.iter().minmax().into_option().unwrap();
     (min..=max)
         .map(|i| {
             positions
                 .iter()
-                .map(|&n| if n > i { n - i } else { i - n })
+                .map(|&n| i64::abs(n - i))
                 .map(|dist| (dist * (dist + 1)) / 2)
-                .sum::<u64>()
+                .sum::<i64>()
         })
         .min()
         .unwrap()
