@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use rayon::iter::{ParallelBridge, ParallelIterator};
 use std::collections::HashMap;
 
 fn part1(input: &str) -> usize {
@@ -45,7 +46,8 @@ fn decode_signals(input: &str, digit_map: &HashMap<String, usize>, chars: &Vec<c
     let trans = chars
         .iter()
         .permutations(7)
-        .find_map(|perm| {
+        .par_bridge()
+        .find_map_any(move |perm| {
             let trans = perm
                 .iter()
                 .enumerate()
