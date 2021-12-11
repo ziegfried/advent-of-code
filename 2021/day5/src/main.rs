@@ -1,61 +1,49 @@
-use nom::{bytes::complete::tag, character::complete::i32, IResult};
 use std::collections::HashMap;
 
 type Point = (i32, i32);
 type Line = (Point, Point);
 
-fn point(input: &str) -> IResult<&str, Point> {
-    let (input, x) = i32(input)?;
-    let (input, _) = tag(",")(input)?;
-    let (input, y) = i32(input)?;
-    Ok((input, (x, y)))
-}
-
-fn line(input: &str) -> IResult<&str, Line> {
-    let (input, a) = point(input)?;
-    let (input, _) = tag(" -> ")(input)?;
-    let (input, b) = point(input)?;
-    Ok((input, (a, b)))
-}
-
-fn parse_line(input: &str) -> Line {
-    let (_, line) = line(input).unwrap();
-    line
-}
-
-fn step(a: i32, b: i32) -> i32 {
-    if a == b {
-        0
-    } else if a > b {
-        -1
-    } else {
-        1
+fn parse_lines(input: &str) -> Vec<Line> {
+    use nom::{
+        bytes::complete::tag, character::complete::i32, character::complete::newline,
+        multi::separated_list1, IResult,
+    };
+    fn point(input: &str) -> IResult<&str, Point> {
+        let (input, x) = i32(input)?;
+        let (input, _) = tag(",")(input)?;
+        let (input, y) = i32(input)?;
+        Ok((input, (x, y)))
     }
+    fn line(input: &str) -> IResult<&str, Line> {
+        let (input, a) = point(input)?;
+        let (input, _) = tag(" -> ")(input)?;
+        let (input, b) = point(input)?;
+        Ok((input, (a, b)))
+    }
+    fn lines(input: &str) -> IResult<&str, Vec<Line>> {
+        let (input, lines) = separated_list1(newline, line)(input)?;
+        Ok((input, lines))
+    }
+    let (remaining_input, lines) = lines(input).unwrap();
+    assert_eq!(remaining_input, "");
+    lines
 }
 
 fn draw_line(line: &Line, canvas: &mut HashMap<Point, usize>) {
-    let ((x1, y1), (x2, y2)) = line;
-    let x_step = step(*x1, *x2);
-    let y_step = step(*y1, *y2);
-    let count = i32::max((x2 - x1).abs(), (y2 - y1).abs()) + 1;
-    let mut x = *x1;
-    let mut y = *y1;
-    for _ in 0..count {
-        match canvas.get_mut(&(x, y)) {
-            Some(value) => {
-                *value += 1;
-            }
-            None => {
-                canvas.insert((x, y), 1);
-            }
-        };
+    let ((x1, y1), (x2, y2)) = *line;
+    let (dx, dy) = (x2 - x1, y2 - y1);
+    let (x_step, y_step) = (dx.signum(), dy.signum());
+    let mut x = x1;
+    let mut y = y1;
+    for _ in 0..=i32::max(dx.abs(), dy.abs()) {
+        canvas.entry((x, y)).and_modify(|v| *v += 1).or_insert(1);
         x += x_step;
         y += y_step;
     }
 }
 
 fn part1(input: &str) -> usize {
-    let lines = input.lines().map(parse_line).collect::<Vec<_>>();
+    let lines = parse_lines(input);
     let mut canvas = HashMap::<Point, usize>::new();
     for line in lines {
         let ((x1, y1), (x2, y2)) = line;
@@ -67,7 +55,7 @@ fn part1(input: &str) -> usize {
 }
 
 fn part2(input: &str) -> usize {
-    let lines = input.lines().map(parse_line).collect::<Vec<_>>();
+    let lines = parse_lines(input);
     let mut canvas = HashMap::<Point, usize>::new();
     for line in lines {
         draw_line(&line, &mut canvas);
