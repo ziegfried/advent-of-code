@@ -77,7 +77,6 @@ fn part2(input: &str) -> usize {
     ];
     let digit_map = digit_segments
         .iter()
-        .map(|s| s.chars().sorted().collect::<String>())
         .enumerate()
         .map(|(i, s)| (String::from(s.clone()), i))
         .collect::<HashMap<String, usize>>();
