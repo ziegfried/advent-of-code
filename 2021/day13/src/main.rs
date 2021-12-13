@@ -11,31 +11,59 @@ type Point = (usize, usize);
 type Paper = HashSet<Point>;
 
 fn parse_input(input: &str) -> (Paper, Vec<FoldInstruction>) {
-    let (coords, instr) = input.split_once("\n\n").unwrap();
+    use nom::branch::alt;
+    use nom::bytes::complete::tag;
+    use nom::character::complete::newline;
+    use nom::character::complete::u32;
+    use nom::multi::separated_list1;
+    use nom::IResult;
 
-    let paper = coords
-        .lines()
-        .map(|line| {
-            line.split(',')
-                .map(|s| s.parse::<usize>().unwrap())
-                .next_tuple()
-                .unwrap()
-        })
-        .collect::<HashSet<Point>>();
+    fn point(input: &str) -> IResult<&str, Point> {
+        let (input, x) = u32(input)?;
+        let (input, _) = tag(",")(input)?;
+        let (input, y) = u32(input)?;
+        Ok((input, (x as usize, y as usize)))
+    }
 
-    let instr = instr
-        .lines()
-        .map(|l| match l.split_once("=") {
-            Some((pfx, val)) => match pfx {
-                "fold along x" => (Axis::X, val.parse::<usize>().unwrap()),
-                "fold along y" => (Axis::Y, val.parse::<usize>().unwrap()),
-                _ => panic!(),
-            },
-            _ => panic!(),
-        })
-        .collect::<Vec<_>>();
+    fn paper(input: &str) -> IResult<&str, Paper> {
+        let (input, points) = separated_list1(newline, point)(input)?;
+        Ok((input, points.iter().map(|&v| v).collect::<Paper>()))
+    }
 
-    (paper.clone(), instr)
+    fn instruction(input: &str) -> IResult<&str, FoldInstruction> {
+        let (input, _) = tag("fold along ")(input)?;
+        let (input, axis_str) = alt((tag("x"), tag("y")))(input)?;
+        let (input, _) = tag("=")(input)?;
+        let (input, value) = u32(input)?;
+        Ok((
+            input,
+            (
+                match axis_str {
+                    "x" => Axis::X,
+                    "y" => Axis::Y,
+                    _ => panic!("unexpected axis {}", axis_str),
+                },
+                value as usize,
+            ),
+        ))
+    }
+
+    fn instructions(input: &str) -> IResult<&str, Vec<FoldInstruction>> {
+        let (input, result) = separated_list1(newline, instruction)(input)?;
+        Ok((input, result))
+    }
+
+    fn full_input(input: &str) -> IResult<&str, (Paper, Vec<FoldInstruction>)> {
+        let (input, paper) = paper(input)?;
+        let (input, _) = newline(input)?;
+        let (input, _) = newline(input)?;
+        let (input, instr) = instructions(input)?;
+        Ok((input, (paper, instr)))
+    }
+
+    let (input, result) = full_input(input).expect("invalid input");
+    assert_eq!(input, "");
+    result
 }
 
 fn fold_value(at: usize, val: usize) -> usize {
