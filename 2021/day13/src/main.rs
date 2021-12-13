@@ -1,33 +1,34 @@
+use itertools::Itertools;
 use std::collections::HashSet;
 
-#[derive(Debug)]
-enum FoldInstruction {
-    AlongX(usize),
-    AlongY(usize),
+#[derive(Debug, PartialEq, Eq)]
+enum Axis {
+    X,
+    Y,
 }
-
+type FoldInstruction = (Axis, usize);
 type Point = (usize, usize);
+type Paper = HashSet<Point>;
 
-fn parse_input(input: &str) -> (Vec<Point>, Vec<FoldInstruction>) {
+fn parse_input(input: &str) -> (Paper, Vec<FoldInstruction>) {
     let (coords, instr) = input.split_once("\n\n").unwrap();
 
     let paper = coords
         .lines()
         .map(|line| {
-            let xy = line
-                .split(',')
+            line.split(',')
                 .map(|s| s.parse::<usize>().unwrap())
-                .collect::<Vec<usize>>();
-            (xy[0], xy[1])
+                .next_tuple()
+                .unwrap()
         })
-        .collect::<Vec<Point>>();
+        .collect::<HashSet<Point>>();
 
     let instr = instr
         .lines()
         .map(|l| match l.split_once("=") {
             Some((pfx, val)) => match pfx {
-                "fold along x" => FoldInstruction::AlongX(val.parse::<usize>().unwrap()),
-                "fold along y" => FoldInstruction::AlongY(val.parse::<usize>().unwrap()),
+                "fold along x" => (Axis::X, val.parse::<usize>().unwrap()),
+                "fold along y" => (Axis::Y, val.parse::<usize>().unwrap()),
                 _ => panic!(),
             },
             _ => panic!(),
@@ -37,7 +38,7 @@ fn parse_input(input: &str) -> (Vec<Point>, Vec<FoldInstruction>) {
     (paper.clone(), instr)
 }
 
-fn fold_at(at: usize, val: usize) -> usize {
+fn fold_value(at: usize, val: usize) -> usize {
     if val > at {
         at - (val - at)
     } else {
@@ -45,28 +46,29 @@ fn fold_at(at: usize, val: usize) -> usize {
     }
 }
 
-fn fold(instruction: &FoldInstruction, paper: &HashSet<Point>) -> HashSet<Point> {
+fn fold((axis, fold_at): &FoldInstruction, paper: &Paper) -> Paper {
     paper
         .iter()
         .map(|&(x, y)| {
-            let nx = match instruction {
-                &FoldInstruction::AlongX(at) => fold_at(at, x),
-                _ => x,
-            };
-            let ny = match instruction {
-                &FoldInstruction::AlongY(at) => fold_at(at, y),
-                _ => y,
-            };
-            (nx, ny)
+            (
+                if *axis == Axis::X {
+                    fold_value(*fold_at, x)
+                } else {
+                    x
+                },
+                if *axis == Axis::Y {
+                    fold_value(*fold_at, y)
+                } else {
+                    y
+                },
+            )
         })
         .collect::<HashSet<_>>()
 }
 
-fn print_paper(p: &HashSet<Point>) {
-    let min_x = p.iter().map(|(x, _)| *x).min().unwrap();
-    let min_y = p.iter().map(|(_, y)| *y).min().unwrap();
-    let max_x = p.iter().map(|(x, _)| *x).max().unwrap();
-    let max_y = p.iter().map(|(_, y)| *y).max().unwrap();
+fn print_paper(p: &Paper) {
+    let (min_x, max_x) = p.iter().map(|(x, _)| *x).minmax().into_option().unwrap();
+    let (min_y, max_y) = p.iter().map(|(_, y)| *y).minmax().into_option().unwrap();
     for y in min_y..=max_y {
         for x in min_x..=max_x {
             print!("{}", if p.contains(&(x, y)) { "█" } else { " " });
@@ -78,14 +80,12 @@ fn print_paper(p: &HashSet<Point>) {
 
 fn part1(input: &str) -> usize {
     let (paper, fold_instructions) = parse_input(input);
-    let paper = paper.iter().map(|p| *p).collect::<HashSet<Point>>();
     let final_paper = fold(fold_instructions.get(0).unwrap(), &paper);
     final_paper.len()
 }
 
 fn part2(input: &str) {
     let (paper, fold_instructions) = parse_input(input);
-    let paper = paper.iter().map(|p| *p).collect::<HashSet<Point>>();
     let final_paper = fold_instructions
         .iter()
         .fold(paper, |paper, instr| fold(instr, &paper));
