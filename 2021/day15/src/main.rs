@@ -1,45 +1,23 @@
-use std::{collections::BinaryHeap, cmp::Ordering};
-
-#[derive(PartialEq, Eq)]
-struct Item(usize, usize, usize);
-impl Ord for Item {
-    fn cmp(&self, other: &Self) -> Ordering {
-        other.0.cmp(&self.0)
-    }
-}
-impl PartialOrd for Item {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
+use pathfinding::prelude::dijkstra;
 
 fn smallest_risk(grid: &Vec<Vec<usize>>) -> usize {
     let row_count = grid.len();
     let col_count = grid[0].len();
     let dirs: Vec<(isize, isize)> = vec![(-1, 0), (1, 0), (0, 1), (0, -1)];
-    let mut smallest_yet = (0..row_count)
-        .map(|_| (0..col_count).map(|_| None).collect::<Vec<Option<usize>>>())
-        .collect::<Vec<_>>();
-    let mut q = BinaryHeap::from(vec![Item(0, 1, 0), Item(0, 0, 1)]);
-    while let Some(Item(risk, x, y)) = q.pop() {
-        let next_risk = risk + grid[x][y];
-        let prev = smallest_yet[x][y];
-        if prev.is_none() || next_risk < prev.unwrap() {
-            smallest_yet[x][y] = Some(next_risk);
-            for (dx, dy) in dirs.iter() {
-                let x1 = x as isize + dx;
-                let y1 = y as isize + dy;
-                if x1 >= 0 && y1 >= 0 {
-                    let x1 = x1 as usize;
-                    let y1 = y1 as usize;
-                    if x1 < row_count && y1 < col_count {
-                        q.push(Item(next_risk, x1, y1));
-                    }
-                }
-            }
-        }
-    }
-    smallest_yet[row_count - 1][col_count - 1].unwrap()
+    let result = dijkstra(
+        &(0, 0),
+        |&(x, y)| {
+            dirs.iter()
+                .map(move |(dx, dy)| (x as isize + dx, y as isize + dy))
+                .filter(|&(x, y)| x >= 0 && y >= 0)
+                .map(|(x, y)| (x as usize, y as usize))
+                .filter(|&(x, y)| x < row_count && y < col_count)
+                .map(|(x, y)| ((x, y), grid[x][y]))
+        },
+        |&(row, col)| row == row_count - 1 && col == col_count - 1,
+    );
+    let (_, result) = result.unwrap();
+    result
 }
 
 fn part1(input: &str) -> usize {
