@@ -1,33 +1,32 @@
+use std::collections::VecDeque;
+
 fn smallest_risk(grid: &Vec<Vec<usize>>) -> usize {
     let row_count = grid.len();
     let col_count = grid[0].len();
-    let mut q = vec![(0, 0, 0)];
+    let dirs: Vec<(isize, isize)> = vec![(-1, 0), (1, 0), (0, 1), (0, -1)];
     let mut smallest_yet = (0..row_count)
         .map(|_| (0..col_count).map(|_| None).collect::<Vec<Option<usize>>>())
         .collect::<Vec<_>>();
-    while !q.is_empty() {
-        let mut next_q = vec![];
-        for (x, y, risk) in q {
-            let next_risk = risk + grid[x][y];
-            let prev = smallest_yet[x][y];
-            if prev.is_none() || next_risk < prev.unwrap() {
-                smallest_yet[x][y] = Some(next_risk);
-                for (dx, dy) in vec![(-1, 0), (1, 0), (0, 1), (0, -1)].into_iter() {
-                    let x1 = x as isize + dx;
-                    let y1 = y as isize + dy;
-                    if x1 >= 0 && y1 >= 0 {
-                        let x1 = x1 as usize;
-                        let y1 = y1 as usize;
-                        if x1 < row_count && y1 < col_count {
-                            next_q.push((x1, y1, next_risk));
-                        }
+    let mut q = VecDeque::from([(1, 0, 0), (0, 1, 0)]);
+    while let Some((x, y, risk)) = q.pop_front() {
+        let next_risk = risk + grid[x][y];
+        let prev = smallest_yet[x][y];
+        if prev.is_none() || next_risk < prev.unwrap() {
+            smallest_yet[x][y] = Some(next_risk);
+            for (dx, dy) in dirs.iter() {
+                let x1 = x as isize + dx;
+                let y1 = y as isize + dy;
+                if x1 >= 0 && y1 >= 0 {
+                    let x1 = x1 as usize;
+                    let y1 = y1 as usize;
+                    if x1 < row_count && y1 < col_count {
+                        q.push_back((x1, y1, next_risk));
                     }
                 }
             }
         }
-        q = next_q;
     }
-    smallest_yet[row_count - 1][col_count - 1].unwrap() - grid[0][0]
+    smallest_yet[row_count - 1][col_count - 1].unwrap()
 }
 
 fn part1(input: &str) -> usize {
