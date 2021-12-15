@@ -1,4 +1,17 @@
-use std::collections::VecDeque;
+use std::{collections::BinaryHeap, cmp::Ordering};
+
+#[derive(PartialEq, Eq)]
+struct Item(usize, usize, usize);
+impl Ord for Item {
+    fn cmp(&self, other: &Self) -> Ordering {
+        other.0.cmp(&self.0)
+    }
+}
+impl PartialOrd for Item {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
 
 fn smallest_risk(grid: &Vec<Vec<usize>>) -> usize {
     let row_count = grid.len();
@@ -7,8 +20,8 @@ fn smallest_risk(grid: &Vec<Vec<usize>>) -> usize {
     let mut smallest_yet = (0..row_count)
         .map(|_| (0..col_count).map(|_| None).collect::<Vec<Option<usize>>>())
         .collect::<Vec<_>>();
-    let mut q = VecDeque::from([(1, 0, 0), (0, 1, 0)]);
-    while let Some((x, y, risk)) = q.pop_front() {
+    let mut q = BinaryHeap::from(vec![Item(0, 1, 0), Item(0, 0, 1)]);
+    while let Some(Item(risk, x, y)) = q.pop() {
         let next_risk = risk + grid[x][y];
         let prev = smallest_yet[x][y];
         if prev.is_none() || next_risk < prev.unwrap() {
@@ -20,7 +33,7 @@ fn smallest_risk(grid: &Vec<Vec<usize>>) -> usize {
                     let x1 = x1 as usize;
                     let y1 = y1 as usize;
                     if x1 < row_count && y1 < col_count {
-                        q.push_back((x1, y1, next_risk));
+                        q.push(Item(next_risk, x1, y1));
                     }
                 }
             }
