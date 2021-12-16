@@ -1,7 +1,25 @@
+#[derive(Debug, PartialEq, Clone, Copy)]
+enum OperatorType {
+    Sum,
+    Product,
+    Min,
+    Max,
+    Gt,
+    Lt,
+    Eq,
+}
+
 #[derive(Debug, PartialEq, Clone)]
 enum Packet {
-    Operator(usize, usize, Box<Vec<Packet>>),
-    LiteralValue(usize, usize),
+    Operator {
+        version: usize,
+        op_type: OperatorType,
+        sub_packets: Box<Vec<Packet>>,
+    },
+    LiteralValue {
+        version: usize,
+        value: usize,
+    },
 }
 
 fn parse_num(bits: &[u8]) -> usize {
@@ -23,10 +41,7 @@ fn take_bits(bits: &mut Vec<u8>, count: usize) -> Vec<u8> {
     res
 }
 
-fn read_value(bits: &mut Vec<u8>) -> Packet {
-    let version = parse_num(&take_bits(bits, 3));
-    let type_id = parse_num(&take_bits(bits, 3));
-    assert_eq!(type_id, 4);
+fn read_literal_value(bits: &mut Vec<u8>) -> usize {
     let mut content = vec![];
     loop {
         let next = take_bits(bits, 5);
@@ -37,13 +52,10 @@ fn read_value(bits: &mut Vec<u8>) -> Packet {
             break;
         }
     }
-    Packet::LiteralValue(version, parse_num(&content))
+    parse_num(&content)
 }
 
-fn read_operator(bits: &mut Vec<u8>) -> Packet {
-    let version = parse_num(&take_bits(bits, 3));
-    let type_id = parse_num(&take_bits(bits, 3));
-    assert!(type_id != 4);
+fn read_operator_contents(bits: &mut Vec<u8>) -> Box<Vec<Packet>> {
     let mut sub = vec![];
     let length_bit = parse_num(&take_bits(bits, 1));
     if length_bit == 0 {
@@ -60,18 +72,35 @@ fn read_operator(bits: &mut Vec<u8>) -> Packet {
     } else {
         panic!();
     }
-    Packet::Operator(version, type_id, Box::new(sub))
+    Box::new(sub)
 }
 
 fn read_packet(bits: &mut Vec<u8>) -> Option<Packet> {
     if bits.len() <= 8 && bits.iter().all(|b| b == &0) {
         return None;
     }
-    let type_id = parse_num(&bits[3..6]);
+    let version = parse_num(&take_bits(bits, 3));
+    let type_id = parse_num(&take_bits(bits, 3));
     if type_id == 4 {
-        Some(read_value(bits))
+        Some(Packet::LiteralValue {
+            version,
+            value: read_literal_value(bits),
+        })
     } else {
-        Some(read_operator(bits))
+        Some(Packet::Operator {
+            version,
+            op_type: match type_id {
+                0 => OperatorType::Sum,
+                1 => OperatorType::Product,
+                2 => OperatorType::Min,
+                3 => OperatorType::Max,
+                5 => OperatorType::Gt,
+                6 => OperatorType::Lt,
+                7 => OperatorType::Eq,
+                _ => panic!("invalid operator type_id {}", type_id),
+            },
+            sub_packets: read_operator_contents(bits),
+        })
     }
 }
 
@@ -88,11 +117,12 @@ fn hex_to_binary(hex_string: &str) -> Vec<u8> {
 
 fn sum_version(packet: &Packet) -> usize {
     match packet {
-        Packet::LiteralValue(version, _) => *version,
-        Packet::Operator(version, _, children) => {
-            let child_sum: usize = children.iter().map(sum_version).sum();
-            version + child_sum
-        }
+        Packet::LiteralValue { version, value: _ } => *version,
+        Packet::Operator {
+            version,
+            op_type: _,
+            sub_packets,
+        } => *version + sub_packets.iter().map(sum_version).sum::<usize>(),
     }
 }
 
@@ -102,25 +132,18 @@ fn part1(input: &str) -> usize {
     sum_version(&packet)
 }
 
-fn compute_operator_result(type_id: usize, children: &Vec<Packet>) -> usize {
-    match type_id {
-        0 => children.iter().map(|child| compute_result(child)).sum(),
-        1 => children
+fn compute_operator_result(op_type: OperatorType, sub: &Vec<Packet>) -> usize {
+    use OperatorType::*;
+    match op_type {
+        Sum => sub.iter().map(|child| compute_result(child)).sum(),
+        Product => sub
             .iter()
             .map(|child| compute_result(child))
             .fold(1, |a, b| a * b),
-        2 => children
-            .iter()
-            .map(|child| compute_result(child))
-            .min()
-            .unwrap(),
-        3 => children
-            .iter()
-            .map(|child| compute_result(child))
-            .max()
-            .unwrap(),
-        5 => {
-            let mut res = children.iter().map(|child| compute_result(child));
+        Min => sub.iter().map(|child| compute_result(child)).min().unwrap(),
+        Max => sub.iter().map(|child| compute_result(child)).max().unwrap(),
+        Gt => {
+            let mut res = sub.iter().map(|child| compute_result(child));
             let first = res.next().unwrap();
             let second = res.next().unwrap();
             if first > second {
@@ -129,8 +152,8 @@ fn compute_operator_result(type_id: usize, children: &Vec<Packet>) -> usize {
                 0
             }
         }
-        6 => {
-            let mut res = children.iter().map(|child| compute_result(child));
+        Lt => {
+            let mut res = sub.iter().map(|child| compute_result(child));
             let first = res.next().unwrap();
             let second = res.next().unwrap();
             if first < second {
@@ -139,8 +162,8 @@ fn compute_operator_result(type_id: usize, children: &Vec<Packet>) -> usize {
                 0
             }
         }
-        7 => {
-            let mut res = children.iter().map(|child| compute_result(child));
+        Eq => {
+            let mut res = sub.iter().map(|child| compute_result(child));
             let first = res.next().unwrap();
             let second = res.next().unwrap();
             if first == second {
@@ -149,14 +172,17 @@ fn compute_operator_result(type_id: usize, children: &Vec<Packet>) -> usize {
                 0
             }
         }
-        _ => panic!(),
     }
 }
 
 fn compute_result(packet: &Packet) -> usize {
-    match packet {
-        Packet::LiteralValue(_, v) => *v,
-        Packet::Operator(_, type_id, children) => compute_operator_result(*type_id, children),
+    match &packet {
+        Packet::LiteralValue { version: _, value } => *value,
+        Packet::Operator {
+            version: _,
+            op_type,
+            sub_packets,
+        } => compute_operator_result(*op_type, &sub_packets),
     }
 }
 
