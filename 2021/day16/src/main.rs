@@ -1,3 +1,6 @@
+mod bits;
+use bits::Bits;
+
 #[derive(Debug, PartialEq, Clone, Copy)]
 enum OperatorType {
     Sum,
@@ -22,10 +25,10 @@ enum Packet {
     },
 }
 
-fn parse_num(bits: &[u8]) -> usize {
+fn parse_num(bits: &[bool]) -> usize {
     usize::from_str_radix(
         bits.iter()
-            .map(|b| format!("{}", b))
+            .map(|b| if *b { '1' } else { '0' })
             .collect::<String>()
             .as_str(),
         2,
@@ -33,39 +36,29 @@ fn parse_num(bits: &[u8]) -> usize {
     .unwrap()
 }
 
-fn take_bits(bits: &mut Vec<u8>, count: usize) -> Vec<u8> {
-    let mut res = vec![];
-    for _ in 0..count {
-        res.push(bits.remove(0));
-    }
-    res
-}
-
-fn read_literal_value(bits: &mut Vec<u8>) -> usize {
-    let mut content = vec![];
+fn read_literal_value(bits: &mut Bits) -> usize {
+    let mut result = 0;
     loop {
-        let next = take_bits(bits, 5);
-        for b in &next[1..] {
-            content.push(*b);
-        }
-        if next[0] == 0 {
+        let next = bits.take(5);
+        result = result * 16 + parse_num(&next[1..]);
+        if next[0] == false {
             break;
         }
     }
-    parse_num(&content)
+    result
 }
 
-fn read_operator_contents(bits: &mut Vec<u8>) -> Box<Vec<Packet>> {
+fn read_operator_contents(bits: &mut Bits) -> Box<Vec<Packet>> {
     let mut sub = vec![];
-    let length_bit = parse_num(&take_bits(bits, 1));
+    let length_bit = parse_num(bits.take(1));
     if length_bit == 0 {
-        let content_length = parse_num(&take_bits(bits, 15));
-        let mut content = take_bits(bits, content_length);
+        let content_length = parse_num(bits.take(15));
+        let mut content = Bits::new(bits.take(content_length).to_vec());
         while let Some(packet) = read_packet(&mut content) {
             sub.push(packet);
         }
     } else if length_bit == 1 {
-        let packet_count = parse_num(&take_bits(bits, 11));
+        let packet_count = parse_num(&bits.take(11));
         for _ in 0..packet_count {
             sub.push(read_packet(bits).unwrap());
         }
@@ -75,12 +68,12 @@ fn read_operator_contents(bits: &mut Vec<u8>) -> Box<Vec<Packet>> {
     Box::new(sub)
 }
 
-fn read_packet(bits: &mut Vec<u8>) -> Option<Packet> {
-    if bits.len() <= 8 && bits.iter().all(|b| b == &0) {
+fn read_packet(bits: &mut Bits) -> Option<Packet> {
+    if bits.empty() {
         return None;
     }
-    let version = parse_num(&take_bits(bits, 3));
-    let type_id = parse_num(&take_bits(bits, 3));
+    let version = parse_num(bits.take(3));
+    let type_id = parse_num(bits.take(3));
     if type_id == 4 {
         Some(Packet::LiteralValue {
             version,
@@ -104,17 +97,6 @@ fn read_packet(bits: &mut Vec<u8>) -> Option<Packet> {
     }
 }
 
-fn hex_to_binary(hex_string: &str) -> Vec<u8> {
-    hex_string
-        .chars()
-        .map(|c| c.to_digit(16).unwrap())
-        .map(|c| format!("{:04b}", c))
-        .collect::<String>()
-        .chars()
-        .map(|c| c.to_digit(2).unwrap() as u8)
-        .collect()
-}
-
 fn sum_version(packet: &Packet) -> usize {
     match packet {
         Packet::LiteralValue { version, value: _ } => *version,
@@ -127,9 +109,7 @@ fn sum_version(packet: &Packet) -> usize {
 }
 
 fn part1(input: &str) -> usize {
-    let mut bits = hex_to_binary(input);
-    let packet = read_packet(&mut bits).unwrap();
-    sum_version(&packet)
+    sum_version(&read_packet(&mut Bits::from_hex_str(input)).unwrap())
 }
 
 fn compute_operator_result(op_type: OperatorType, sub: &Vec<Packet>) -> usize {
@@ -187,19 +167,47 @@ fn compute_result(packet: &Packet) -> usize {
 }
 
 fn part2(input: &str) -> usize {
-    let mut bits = hex_to_binary(input);
-    let packet = read_packet(&mut bits).unwrap();
-    compute_result(&packet)
+    compute_result(&read_packet(&mut Bits::from_hex_str(input)).unwrap())
 }
 
 fn main() {
-    println!("Part 1: {:?}", part1(include_str!("in.txt")));
-    println!("Part 2: {:?}", part2(include_str!("in.txt")));
+    println!("Part 1: {}", part1(include_str!("in.txt")));
+    println!("Part 2: {}", part2(include_str!("in.txt")));
+}
+
+#[test]
+fn test_read_packet() {
+    assert_eq!(
+        read_packet(&mut Bits::from_hex_str("D2FE28")),
+        Some(Packet::LiteralValue {
+            version: 6,
+            value: 2021
+        })
+    );
+    assert_eq!(
+        read_packet(&mut Bits::from_hex_str("38006F45291200")),
+        Some(Packet::Operator {
+            version: 1,
+            op_type: OperatorType::Lt,
+            sub_packets: Box::new(vec![
+                Packet::LiteralValue {
+                    version: 6,
+                    value: 10,
+                },
+                Packet::LiteralValue {
+                    version: 2,
+                    value: 20,
+                },
+            ]),
+        },)
+    );
 }
 
 #[test]
 fn test_part1() {
     assert_eq!(part1("8A004A801A8002F478"), 16);
+    assert_eq!(part1("620080001611562C8802118E34"), 12);
+    assert_eq!(part1("C0015000016115A2E0802F182340"), 23);
     assert_eq!(part1("A0016C880162017C3686B18A3D4780"), 31);
 }
 
@@ -207,5 +215,10 @@ fn test_part1() {
 fn test_part2() {
     assert_eq!(part2("C200B40A82"), 3);
     assert_eq!(part2("04005AC33890"), 54);
+    assert_eq!(part2("880086C3E88112"), 7);
+    assert_eq!(part2("CE00C43D881120"), 9);
+    assert_eq!(part2("D8005AC2A8F0"), 1);
+    assert_eq!(part2("F600BC2D8F"), 0);
+    assert_eq!(part2("9C005AC2F8F0"), 0);
     assert_eq!(part2("9C0141080250320F1802104A08"), 1);
 }
