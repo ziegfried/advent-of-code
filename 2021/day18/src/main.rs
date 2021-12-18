@@ -7,11 +7,11 @@ enum Number {
 }
 use Number::*;
 
-fn pair(n1: usize, n2: usize) -> Number {
-    Pair(Box::new(Reg(n1)), Box::new(Reg(n2)))
+fn pair(n1: Number, n2: Number) -> Number {
+    Pair(Box::new(n1), Box::new(n2))
 }
 
-fn map_value(value: &Value) -> Number {
+fn map_json_value(value: &Value) -> Number {
     use Value::*;
     match value {
         Number(n) => Reg(n.as_u64().unwrap() as usize),
@@ -19,7 +19,7 @@ fn map_value(value: &Value) -> Number {
             assert_eq!(children.len(), 2);
             let left = &children[0];
             let right = &children[1];
-            Pair(Box::new(map_value(left)), Box::new(map_value(right)))
+            pair(map_json_value(left), map_json_value(right))
         }
         _ => panic!(),
     }
@@ -27,125 +27,96 @@ fn map_value(value: &Value) -> Number {
 
 fn parse(input: &str) -> Number {
     let v: Value = serde_json::from_str(input).unwrap();
-    map_value(&v)
+    map_json_value(&v)
 }
 
-fn split(n: Number) -> Option<Number> {
+fn split(n: &Number) -> Option<Number> {
     match n {
         Reg(num) => {
-            if num > 9 {
-                Some(pair(num / 2, num / 2 + num % 2))
+            if *num > 9 {
+                Some(pair(Reg(num / 2), Reg(num / 2 + num % 2)))
             } else {
                 None
             }
         }
         Pair(n1, n2) => {
-            let s1 = split(*n1.clone());
-            if s1.is_some() {
-                Some(Pair(
-                    match s1 {
-                        Some(n) => Box::new(n),
-                        None => n1,
-                    },
-                    n2,
-                ))
+            if let Some(s1) = split(&n1) {
+                Some(Pair(Box::new(s1), n2.clone()))
+            } else if let Some(s2) = split(&n2) {
+                Some(Pair(n1.clone(), Box::new(s2)))
             } else {
-                let s2 = split(*n2.clone());
-                if s2.is_some() {
-                    Some(Pair(
-                        n1,
-                        match s2 {
-                            Some(n) => Box::new(n),
-                            None => n2,
-                        },
-                    ))
-                } else {
-                    None
-                }
+                None
             }
         }
     }
 }
 
 fn add(n1: &Number, n2: &Number) -> Number {
-    Pair(Box::new(n1.clone()), Box::new(n2.clone()))
+    pair(n1.clone(), n2.clone())
 }
 
-fn unpack_regular(n: Number) -> usize {
+fn unwrap_regular(n: &Number) -> usize {
     match n {
-        Reg(v) => v,
+        Reg(v) => *v,
         _ => panic!("{:?} not a regular number", n),
     }
 }
 
-fn add_left(n: Number, a: usize) -> Number {
+fn add_to_side(n: &Number, val: usize, left_side: bool) -> Number {
     match n {
-        Reg(v) => Reg(v + a),
-        Pair(l, r) => Pair(Box::new(add_left(*l, a)), r),
-    }
-}
-
-fn add_right(n: Number, a: usize) -> Number {
-    match n {
-        Reg(v) => Reg(v + a),
-        Pair(l, r) => Pair(l, Box::new(add_right(*r, a))),
-    }
-}
-
-fn explode_inner(n: &Number, depth: usize) -> Option<(Number, usize, usize)> {
-    if depth == 5 {
-        if let Pair(a, b) = n.clone() {
-            return Some((Reg(0), unpack_regular(*a), unpack_regular(*b)));
-        }
-    }
-    match n {
-        Pair(left, right) => {
-            let left = *left.clone();
-            let right = *right.clone();
-            if let Some((new_left, l, r)) = explode_inner(&left, depth + 1) {
-                let (right, r) = if let Reg(n) = right {
-                    (Reg(r + n), 0)
-                } else {
-                    (add_left(right, r), 0)
-                };
-                return Some((Pair(Box::new(new_left), Box::new(right)), l, r));
-            }
-            if let Some((new_right, l, r)) = explode_inner(&right, depth + 1) {
-                let (left, l) = if let Reg(n) = left {
-                    (Reg(l + n), 0)
-                } else {
-                    (add_right(left, l), 0)
-                };
-                return Some((Pair(Box::new(left), Box::new(new_right.clone())), l, r));
-            }
-        }
-        _ => {}
-    }
-    None
-}
-
-fn explode(n: Number) -> Option<Number> {
-    if let Some((res, _, _)) = explode_inner(&n, 1) {
-        return Some(res);
-    } else {
-        return None;
-    }
-}
-
-fn reduce(n: Number) -> Number {
-    match explode(n.clone()) {
-        Some(exploded) => reduce(exploded),
-        None => match split(n.clone()) {
-            Some(split) => reduce(split),
-            None => n,
+        Reg(v) => Reg(v + val),
+        Pair(l, r) => match left_side {
+            true => Pair(Box::new(add_to_side(l, val, true)), r.clone()),
+            false => Pair(l.clone(), Box::new(add_to_side(r, val, false))),
         },
     }
 }
 
-fn magnitude(v: Number) -> usize {
+fn explode_impl(n: &Number, depth: usize) -> Option<(Number, usize, usize)> {
+    if depth == 4 {
+        if let Pair(a, b) = n {
+            return Some((Reg(0), unwrap_regular(a), unwrap_regular(b)));
+        }
+    }
+    if let Pair(left, right) = n {
+        if let Some((new_left, left_over, right_over)) = explode_impl(left, depth + 1) {
+            let right = if let Reg(n) = **right {
+                Reg(right_over + n)
+            } else {
+                add_to_side(right, right_over, true)
+            };
+            return Some((Pair(Box::new(new_left), Box::new(right)), left_over, 0));
+        }
+        if let Some((new_right, left_over, right_over)) = explode_impl(right, depth + 1) {
+            let left = if let Reg(n) = **left {
+                Reg(left_over + n)
+            } else {
+                add_to_side(left, left_over, false)
+            };
+            return Some((Pair(Box::new(left), Box::new(new_right)), 0, right_over));
+        }
+    }
+    None
+}
+
+fn explode(n: &Number) -> Option<Number> {
+    explode_impl(n, 0).map(|(res, _, _)| res)
+}
+
+fn reduce(n: &Number) -> Number {
+    match explode(n) {
+        Some(exploded) => reduce(&exploded),
+        None => match split(n) {
+            Some(split) => reduce(&split),
+            None => n.clone(),
+        },
+    }
+}
+
+fn magnitude(v: &Number) -> usize {
     match v {
-        Pair(a, b) => 3 * magnitude(*a) + 2 * magnitude(*b),
-        Reg(v) => v,
+        Pair(a, b) => 3 * magnitude(a) + 2 * magnitude(b),
+        Reg(v) => *v,
     }
 }
 
@@ -161,9 +132,9 @@ fn part1(input: &str) -> usize {
     let result = input
         .lines()
         .map(parse)
-        .reduce(|a, b| reduce(add(&a, &b)))
+        .reduce(|a, b| reduce(&add(&a, &b)))
         .unwrap();
-    magnitude(result)
+    magnitude(&result)
 }
 
 fn part2(input: &str) -> usize {
@@ -172,8 +143,8 @@ fn part2(input: &str) -> usize {
     for a in inputs.iter() {
         for b in inputs.iter() {
             if a != b {
-                max_val = usize::max(max_val, magnitude(reduce(add(a, b))));
-                max_val = usize::max(max_val, magnitude(reduce(add(b, a))));
+                max_val = usize::max(max_val, magnitude(&reduce(&add(a, b))));
+                max_val = usize::max(max_val, magnitude(&reduce(&add(b, a))));
             }
         }
     }
@@ -199,26 +170,25 @@ fn test_part2() {
 #[test]
 fn test_split() {
     assert_eq!(
-        split(parse("[[[[0,7],4],[[7,8],[0,13]]],[1,1]]")),
+        split(&parse("[[[[0,7],4],[[7,8],[0,13]]],[1,1]]")),
         Some(parse("[[[[0,7],4],[[7,8],[0,[6,7]]]],[1,1]]"))
     );
-    assert_eq!(split(parse("[1,2]")), None);
-
+    assert_eq!(split(&parse("[1,2]")), None);
     assert_eq!(
-        split(parse(
-            "[[[[4, 0], [5, 4]], [[7, 0], [15, 5]]], [10, [[11, 9], [11, 0]]]]"
+        split(&parse(
+            "[[[[4,0],[5,4]],[[7,0],[15,5]]],[10,[[11,9],[11,0]]]]"
         )),
         Some(parse(
-            "[[[[4, 0], [5, 4]], [[7, 0], [[7, 8], 5]]], [10, [[11, 9], [11, 0]]]]"
+            "[[[[4,0],[5,4]],[[7,0],[[7,8],5]]],[10,[[11,9],[11,0]]]]"
         ))
     );
 }
 
 #[test]
 fn test_magnitude() {
-    assert_eq!(magnitude(parse("[[1,2],[[3,4],5]]")), 143);
+    assert_eq!(magnitude(&parse("[[1,2],[[3,4],5]]")), 143);
     assert_eq!(
-        magnitude(parse(
+        magnitude(&parse(
             "[[[[8,7],[7,7]],[[8,6],[7,7]]],[[[0,7],[6,6]],[8,7]]]"
         )),
         3488
@@ -228,35 +198,35 @@ fn test_magnitude() {
 #[test]
 fn test_explode() {
     assert_eq!(
-        explode(parse("[[[[[9,8],1],2],3],4]")),
+        explode(&parse("[[[[[9,8],1],2],3],4]")),
         Some(parse("[[[[0,9],2],3],4]"))
     );
     assert_eq!(
-        explode(parse("[7,[6,[5,[4,[3,2]]]]]")),
+        explode(&parse("[7,[6,[5,[4,[3,2]]]]]")),
         Some(parse("[7,[6,[5,[7,0]]]]"))
     );
     assert_eq!(
-        explode(parse("[[3,[2,[1,[7,3]]]],[6,[5,[4,[3,2]]]]]")),
+        explode(&parse("[[3,[2,[1,[7,3]]]],[6,[5,[4,[3,2]]]]]")),
         Some(parse("[[3,[2,[8,0]]],[9,[5,[4,[3,2]]]]]"))
     );
     assert_eq!(
-        explode(parse("[7,[6,[5,[4,[3,2]]]]]")),
+        explode(&parse("[7,[6,[5,[4,[3,2]]]]]")),
         Some(parse("[7,[6,[5,[7,0]]]]"))
     );
     assert_eq!(
-        explode(parse("[[6,[5,[4,[3,2]]]],1]")),
+        explode(&parse("[[6,[5,[4,[3,2]]]],1]")),
         Some(parse("[[6,[5,[7,0]]],3]"))
     );
     assert_eq!(
-        explode(parse("[[3,[2,[1,[7,3]]]],[6,[5,[4,[3,2]]]]]")),
+        explode(&parse("[[3,[2,[1,[7,3]]]],[6,[5,[4,[3,2]]]]]")),
         Some(parse("[[3,[2,[8,0]]],[9,[5,[4,[3,2]]]]]"))
     );
     assert_eq!(
-        explode(parse("[[3,[2,[8,0]]],[9,[5,[4,[3,2]]]]]")),
+        explode(&parse("[[3,[2,[8,0]]],[9,[5,[4,[3,2]]]]]")),
         Some(parse("[[3,[2,[8,0]]],[9,[5,[7,0]]]]"))
     );
     assert_eq!(
-        explode(parse(
+        explode(&parse(
             "[[[[4,0],[5,4]],[[7,7],[6,5]]],[[[5,5],[0,6]],[[6,5],[5,5]]]]"
         )),
         None
