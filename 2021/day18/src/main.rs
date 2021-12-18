@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use serde_json::Value;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -17,9 +18,7 @@ fn map_json_value(value: &Value) -> Number {
         Number(n) => Reg(n.as_u64().unwrap() as usize),
         Array(children) => {
             assert_eq!(children.len(), 2);
-            let left = &children[0];
-            let right = &children[1];
-            pair(map_json_value(left), map_json_value(right))
+            pair(map_json_value(&children[0]), map_json_value(&children[1]))
         }
         _ => panic!(),
     }
@@ -72,35 +71,35 @@ fn add_to_side(n: &Number, val: usize, left_side: bool) -> Number {
     }
 }
 
-fn explode_impl(n: &Number, depth: usize) -> Option<(Number, usize, usize)> {
+fn explode_layer(n: &Number, depth: usize) -> Option<(Number, usize, usize)> {
     if depth == 4 {
         if let Pair(a, b) = n {
             return Some((Reg(0), unwrap_regular(a), unwrap_regular(b)));
         }
     }
     if let Pair(left, right) = n {
-        if let Some((new_left, left_over, right_over)) = explode_impl(left, depth + 1) {
+        if let Some((left, left_over, right_over)) = explode_layer(left, depth + 1) {
             let right = if let Reg(n) = **right {
-                Reg(right_over + n)
+                Reg(n + right_over)
             } else {
                 add_to_side(right, right_over, true)
             };
-            return Some((Pair(Box::new(new_left), Box::new(right)), left_over, 0));
+            return Some((Pair(Box::new(left), Box::new(right)), left_over, 0));
         }
-        if let Some((new_right, left_over, right_over)) = explode_impl(right, depth + 1) {
+        if let Some((right, left_over, right_over)) = explode_layer(right, depth + 1) {
             let left = if let Reg(n) = **left {
-                Reg(left_over + n)
+                Reg(n + left_over)
             } else {
                 add_to_side(left, left_over, false)
             };
-            return Some((Pair(Box::new(left), Box::new(new_right)), 0, right_over));
+            return Some((Pair(Box::new(left), Box::new(right)), 0, right_over));
         }
     }
     None
 }
 
 fn explode(n: &Number) -> Option<Number> {
-    explode_impl(n, 0).map(|(res, _, _)| res)
+    explode_layer(n, 0).map(|(res, _, _)| res)
 }
 
 fn reduce(n: &Number) -> Number {
@@ -138,17 +137,13 @@ fn part1(input: &str) -> usize {
 }
 
 fn part2(input: &str) -> usize {
-    let inputs: Vec<Number> = input.lines().map(parse).collect();
-    let mut max_val: usize = 0;
-    for a in inputs.iter() {
-        for b in inputs.iter() {
-            if a != b {
-                max_val = usize::max(max_val, magnitude(&reduce(&add(a, b))));
-                max_val = usize::max(max_val, magnitude(&reduce(&add(b, a))));
-            }
-        }
-    }
-    max_val
+    input
+        .lines()
+        .map(parse)
+        .permutations(2)
+        .map(|perm| magnitude(&reduce(&add(&perm[0], &perm[1]))))
+        .max()
+        .unwrap()
 }
 
 fn main() {
