@@ -1,0 +1,9 @@
+To obtain the session key for Advent of Code follow these steps:
+
+1) Go to https://adventofcode.com and log in if you haven't already
+2) Go to any problem and click to download the puzzle input
+3) Open the developer tools -> network tab and reload the page
+4) Look for the request to download the input
+5) Look for the request headers, in particular the "Cookie" headers
+6) Copy the value of the "session" cookie, which should be in the form of `session=<hex string>`
+7) Paste the value of the session coookie here.
