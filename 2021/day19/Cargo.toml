@@ -1,0 +1,8 @@
+[package]
+name = "aoc"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+itertools = "0.10.3"
+nom = "7.1.0"
