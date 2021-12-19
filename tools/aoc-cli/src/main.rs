@@ -193,11 +193,11 @@ fn execute() -> anyhow::Result<()> {
 
             let project_dir = env::current_dir()?
                 .join(format!("{}", year))
-                .join(format!("day{}", day));
-            eprintln!("Creating new project {}/day{}", year, day);
+                .join(format!("day{:02}", day));
+            eprintln!("Creating new project {}/day{:02}", year, day);
 
             if project_dir.exists() {
-                return Err(anyhow!("Project already exists at {}/day{}", year, day));
+                return Err(anyhow!("Project already exists at {}/day{:02}", year, day));
             }
 
             fs::create_dir_all(project_dir.join("src"))

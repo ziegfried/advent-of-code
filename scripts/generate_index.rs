@@ -35,10 +35,10 @@ fn main() -> Result<(), io::Error> {
 
         contents
             .push_str(format!("<details><summary>{year}</summary>\n<p>\n\n", year = year).as_str());
-        for day in days {
+        for day in days.iter().rev() {
             contents.push_str(
                 format!(
-                    " - [Day {day}](./{year}/day{day}/src/main.rs)\n",
+                    " - [Day {day}](./{year}/day{day:02}/src/main.rs)\n",
                     day = day,
                     year = year
                 )
