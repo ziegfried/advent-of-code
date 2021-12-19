@@ -77,6 +77,7 @@ My solutions to [Advent of Code](https://adventofcode.com/) problems. Written in
  - [Day 11](./2019/day11/src/main.rs)
  - [Day 12](./2019/day12/src/main.rs)
  - [Day 13](./2019/day13/src/main.rs)
+ - [Day 14](./2019/day14/src/main.rs)
 
 </p>
 </details>
