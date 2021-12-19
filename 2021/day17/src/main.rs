@@ -1,3 +1,7 @@
+#[macro_use]
+extern crate serde_scan;
+use serde_scan::ScanError;
+
 type TargetArea = ((i32, i32), (i32, i32));
 
 #[derive(Debug)]
@@ -59,18 +63,24 @@ fn parts(target: TargetArea) -> (i32, i32) {
     (max_y, hit_count)
 }
 
+fn parse(input: &str) -> Result<TargetArea, ScanError> {
+    let (x_min, x_max, y_min, y_max): (i32, i32, i32, i32) =
+        scan!("target area: x={}..{}, y={}..{}" <- input)?;
+    Ok(((x_min, x_max), (y_min, y_max)))
+}
+
 fn main() {
-    let (part1, part2) = parts(((288, 330), (-96, -50)));
+    let (part1, part2) = parts(parse(include_str!("in.txt")).unwrap());
     println!("Part 1: {}", part1);
     println!("Part 2: {}", part2);
 }
 
 #[test]
 fn test_part1() {
-    assert_eq!(parts(((20, 30), (-10, -5))).0, 45);
+    assert_eq!(parts(parse(include_str!("test.txt")).unwrap()).0, 45);
 }
 
 #[test]
 fn test_part2() {
-    assert_eq!(parts(((20, 30), (-10, -5))).1, 112);
+    assert_eq!(parts(parse(include_str!("test.txt")).unwrap()).1, 112);
 }
