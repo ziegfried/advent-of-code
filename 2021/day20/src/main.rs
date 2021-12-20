@@ -1,14 +1,37 @@
 use itertools::Itertools;
 use std::collections::HashSet;
 
-fn full_range(image: &HashSet<(i64, i64)>) -> (i64, i64, i64, i64) {
+struct Image {
+    pub points: HashSet<(i64, i64)>,
+    pub inverted: bool,
+}
+impl Image {
+    fn new(inverted: bool) -> Self {
+        Image {
+            points: HashSet::new(),
+            inverted,
+        }
+    }
+    fn is_lit(&self, pos: &(i64, i64)) -> bool {
+        self.points.contains(pos) != self.inverted
+    }
+    fn set_lit(&mut self, pos: (i64, i64), lit: bool) {
+        if lit != self.inverted {
+            self.points.insert(pos);
+        }
+    }
+}
+
+fn full_range(image: &Image) -> (i64, i64, i64, i64) {
     let (min_x, max_x) = image
+        .points
         .iter()
         .map(|(x, _)| *x)
         .minmax()
         .into_option()
         .unwrap();
     let (min_y, max_y) = image
+        .points
         .iter()
         .map(|(_, y)| *y)
         .minmax()
@@ -17,22 +40,14 @@ fn full_range(image: &HashSet<(i64, i64)>) -> (i64, i64, i64, i64) {
     (min_x, max_x, min_y, max_y)
 }
 
-fn is_pixel_lit(
-    x: i64,
-    y: i64,
-    image: &HashSet<(i64, i64)>,
-    algo: &Vec<bool>,
-    is_inverted: bool,
-) -> bool {
+fn is_next_pixel_lit(x: i64, y: i64, image: &Image, algo: &[bool]) -> bool {
     let s = ((-1)..=1)
         .map(|dx| {
             ((-1)..=1)
-                .map(
-                    |dy| match image.contains(&(x + dx, y + dy)) != is_inverted {
-                        true => '1',
-                        false => '0',
-                    },
-                )
+                .map(|dy| match image.is_lit(&(x + dx, y + dy)) {
+                    true => '1',
+                    false => '0',
+                })
                 .collect::<String>()
         })
         .collect::<String>();
@@ -40,32 +55,25 @@ fn is_pixel_lit(
     algo[idx]
 }
 
-fn enhance(
-    image: &HashSet<(i64, i64)>,
-    algo: &Vec<bool>,
-    invert: bool,
-    is_inverted: bool,
-) -> HashSet<(i64, i64)> {
-    let (min_x, max_x, min_y, max_y) = full_range(&image);
-    let mut result: HashSet<(i64, i64)> = HashSet::new();
+fn enhance(image: &Image, algo: &[bool], invert: bool) -> Image {
+    let mut result = Image::new(invert);
+    let (min_x, max_x, min_y, max_y) = full_range(image);
     for x in (min_x - 1)..=(max_x + 1) {
         for y in (min_y - 1)..=(max_y + 1) {
-            if is_pixel_lit(x, y, image, algo, is_inverted) != invert {
-                result.insert((x, y));
-            }
+            result.set_lit((x, y), is_next_pixel_lit(x, y, image, algo));
         }
     }
     result
 }
 
-fn rasterize(image: &HashSet<(i64, i64)>) -> String {
-    let (min_x, max_x, min_y, max_y) = full_range(&image);
-    (min_x - 1..=max_x + 1)
+fn rasterize(image: &Image, padding: i64) -> String {
+    let (min_x, max_x, min_y, max_y) = full_range(image);
+    (min_x - padding..=max_x + padding)
         .map(|x| {
             format!(
                 "{}\n",
-                (min_y - 1..=max_y + 1)
-                    .map(|y| match image.contains(&(x, y)) {
+                (min_y - padding..=max_y + padding)
+                    .map(|y| match image.is_lit(&(x, y)) {
                         true => '#',
                         false => '.',
                     })
@@ -75,7 +83,13 @@ fn rasterize(image: &HashSet<(i64, i64)>) -> String {
         .collect::<String>()
 }
 
-const PRINT: bool = false;
+const PRINT_ENABLED: bool = false;
+
+fn print(image: &Image) {
+    if PRINT_ENABLED {
+        println!("{}", rasterize(image, 5));
+    }
+}
 
 fn solve(input: &str) -> (usize, usize) {
     let (algo, grid) = input.split_once("\n\n").unwrap();
@@ -89,37 +103,28 @@ fn solve(input: &str) -> (usize, usize) {
         })
         .collect();
     assert_eq!(algo.len(), 512);
-
     let grid = grid
         .split('\n')
         .map(|line| line.chars().collect::<Vec<char>>())
         .collect::<Vec<Vec<char>>>();
-
-    let mut image = HashSet::new();
+    let mut image = Image::new(false);
     for x in 0..grid.len() {
         for y in 0..grid[0].len() {
-            if grid[x][y] == '#' {
-                image.insert((x as i64, y as i64));
-            }
+            image.set_lit((x as i64, y as i64), grid[x][y] == '#');
         }
     }
     let should_invert = algo[0];
     let mut p1 = 0;
     for step in 0..50 {
         let invert = should_invert && step % 2 == 0;
-        let is_inverted = should_invert && step % 2 == 1;
-        image = enhance(&image, &algo, invert, is_inverted);
+        print(&image);
+        image = enhance(&image, &algo, invert);
         if step == 1 {
-            p1 = image.len();
-        }
-        if PRINT {
-            println!("{}\n-------\n", rasterize(&image));
+            p1 = image.points.len();
         }
     }
-    if PRINT {
-        println!("{}", rasterize(&image));
-    }
-    (p1, image.len())
+    print(&image);
+    (p1, image.points.len())
 }
 
 fn main() {
