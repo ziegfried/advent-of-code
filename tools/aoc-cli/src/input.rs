@@ -1,5 +1,3 @@
-use reqwest;
-
 pub fn download_input(year: u16, day: u16, session: String) -> reqwest::Result<String> {
     let client = reqwest::blocking::Client::new();
     let response = client
@@ -12,5 +10,5 @@ pub fn download_input(year: u16, day: u16, session: String) -> reqwest::Result<S
     if !response.status().is_success() {
         return Err(response.error_for_status().err().unwrap());
     }
-    Ok(response.text()?)
+    response.text()
 }

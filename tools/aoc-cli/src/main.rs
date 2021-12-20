@@ -1,5 +1,6 @@
 mod aoc_env;
 mod config;
+mod fs_utils;
 mod generate_index;
 mod input;
 use anyhow::{anyhow, Context, Result};
@@ -80,7 +81,7 @@ fn prompt_year() -> anyhow::Result<u16> {
         .with_prompt("Enter year")
         .validate_with(|val: &String| match val.parse::<u16>() {
             Ok(year) => {
-                if year >= 2014 && year <= 3000 {
+                if (2014..=3000).contains(&year) {
                     Ok(())
                 } else {
                     Err("Day must be 1-25")
@@ -99,7 +100,7 @@ fn prompt_day(next_day: u16) -> anyhow::Result<u16> {
         .with_prompt("Enter day")
         .validate_with(|val: &String| match val.parse::<u16>() {
             Ok(day) => {
-                if day >= 1 && day <= 25 {
+                if (1..=25).contains(&day) {
                     Ok(())
                 } else {
                     Err("Day must be 1-25")
@@ -172,17 +173,21 @@ fn execute() -> anyhow::Result<()> {
             };
 
             if output != "-" {
-                eprintln!("Writing input file to {}", output);
-                if fs::metadata(&output).is_ok() {
-                    if !Confirm::new()
-                        .with_prompt("File already exists, overwrite?")
+                let proceed = if !fs_utils::exists(&output) || fs_utils::is_file_empty(&output)? {
+                    true
+                } else {
+                    let answer = Confirm::new()
+                        .with_prompt(format!("File {} already exists, overwrite?", output))
                         .default(true)
-                        .interact()?
-                    {
-                        return Ok(());
-                    }
+                        .interact()?;
+                    answer
+                };
+                if proceed {
+                    eprintln!("Writing input file to {}", output);
+                    fs::write(output, input_contents.trim())?;
+                } else {
+                    eprintln!("Aborted writing input file to {}", output);
                 }
-                fs::write(output.clone(), input_contents.trim())?;
             } else {
                 print!("{}", input_contents.trim());
             }

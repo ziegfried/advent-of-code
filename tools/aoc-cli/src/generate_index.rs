@@ -7,7 +7,7 @@ fn list_dir<S: AsRef<Path>>(dir: S) -> Result<Vec<String>, io::Error> {
     let mut entries = vec![];
     for child in fs::read_dir(dir)? {
         if let Some(name) = child?.path().file_name() {
-            entries.push(String::from(name.to_str().unwrap().clone()));
+            entries.push(String::from(name.to_str().unwrap()));
         }
     }
     Ok(entries)
@@ -28,27 +28,27 @@ pub fn generate_index(base_dir: String, filename: String) -> anyhow::Result<()> 
         }
     }
 
-    if years.len() == 0 {
+    if years.is_empty() {
         return Err(anyhow::anyhow!(
             "did not find any year directories in {}",
             base_dir
         ));
     }
 
-    years.sort();
+    years.sort_unstable();
 
     eprintln!("Found year directories {:?}", years);
 
     for year in years.iter().rev() {
         let mut days = vec![];
         for folder in list_dir(format!("{}/{}", &base_dir, year))? {
-            if folder.starts_with("day") {
-                if let Ok(day) = folder[3..].parse::<u32>() {
+            if let Some(day_number) = folder.strip_prefix("day") {
+                if let Ok(day) = day_number.parse::<u32>() {
                     days.push(day);
                 }
             }
         }
-        days.sort();
+        days.sort_unstable();
 
         contents.push_str(
             format!(
@@ -83,7 +83,7 @@ pub fn generate_index(base_dir: String, filename: String) -> anyhow::Result<()> 
 
     let mut result = String::new();
     result.push_str(&readme_contents[0..start]);
-    result.push_str(&"<!-- INDEX-START -->\n");
+    result.push_str("<!-- INDEX-START -->\n");
     result.push_str(contents.as_str());
     result.push_str(&readme_contents[end..]);
 
