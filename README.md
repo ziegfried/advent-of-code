@@ -5,7 +5,7 @@ My solutions to [Advent of Code](https://adventofcode.com/) problems. Written in
 ## Solutions
 
 <!-- INDEX-START -->
-<details><summary>2021</summary>
+<details><summary>Advent of Code 2021</summary>
 <p>
 
  - [Day 19](./2021/day19/src/main.rs)
@@ -30,7 +30,7 @@ My solutions to [Advent of Code](https://adventofcode.com/) problems. Written in
 
 </p>
 </details>
-<details><summary>2020</summary>
+<details><summary>Advent of Code 2020</summary>
 <p>
 
  - [Day 25](./2020/day25/src/main.rs)
@@ -61,7 +61,7 @@ My solutions to [Advent of Code](https://adventofcode.com/) problems. Written in
 
 </p>
 </details>
-<details><summary>2019</summary>
+<details><summary>Advent of Code 2019</summary>
 <p>
 
  - [Day 14](./2019/day14/src/main.rs)
@@ -81,7 +81,7 @@ My solutions to [Advent of Code](https://adventofcode.com/) problems. Written in
 
 </p>
 </details>
-<details><summary>2015</summary>
+<details><summary>Advent of Code 2015</summary>
 <p>
 
  - [Day 25](./2015/day25/src/main.rs)
