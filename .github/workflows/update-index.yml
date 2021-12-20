@@ -10,8 +10,8 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v2
-            - run: cargo install cargo-script 
-            - run: ./scripts/generate_index.rs
+            - run: cargo install --path tools/aoc-cli 
+            - run: aoc generate-index
             - name: push changes
               run: |
                   git config --global user.name 'Siegfried Puchbauer'

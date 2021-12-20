@@ -1,5 +1,6 @@
 mod aoc_env;
 mod config;
+mod generate_index;
 mod input;
 use anyhow::{anyhow, Context, Result};
 use aoc_env::list_days;
@@ -49,6 +50,16 @@ enum Opt {
         /// Open project in VS Code
         #[structopt(short, long)]
         open: bool,
+    },
+    /// Generate markdown index linking to problem subdirectories
+    GenerateIndex {
+        /// directory that contains AOC solutions with a directory structure of <year>/day<day>
+        #[structopt(long, default_value = ".")]
+        dir: String,
+
+        /// Markdown file to update with a placeholder for the index
+        #[structopt(long, default_value = "README.md")]
+        file: String,
     },
 }
 
@@ -235,13 +246,18 @@ fn execute() -> anyhow::Result<()> {
                     .args([project_dir])
                     .status()?;
             } else {
-                eprintln!("\nProject created. To open run:\n\ncode {}/day{}", year, day);
+                eprintln!(
+                    "\nProject created. To open run:\n\ncode {}/day{}",
+                    year, day
+                );
             }
+        }
+        GenerateIndex { dir, file } => {
+            generate_index::generate_index(dir, file)?;
         }
     };
     Ok(())
 }
-
 
 fn main() {
     if let Err(e) = execute() {
