@@ -29,9 +29,7 @@ impl Box {
         )
     }
     fn new(x: (i32, i32), y: (i32, i32), z: (i32, i32), state: State) -> Self {
-        assert!(x.0 <= x.1, "{} < {}", x.0, x.1);
-        assert!(y.0 <= y.1, "{} < {}", x.0, x.1);
-        assert!(z.0 <= z.1, "{} < {}", x.0, x.1);
+        assert!(x.0 <= x.1 && y.0 <= y.1 && z.0 <= z.1);
         Self { x, y, z, state }
     }
     fn contains(&self, other: &Box) -> bool {
@@ -70,33 +68,14 @@ fn cap_at(b: &Box, cap: &Box) -> Option<Box> {
     }
 }
 
-fn part1(input: &str) -> usize {
-    let init = Box::new((-50, 51), (-50, 51), (-50, 51), State::On);
-    let mut boxes: Vec<Box> = vec![];
-    for line in input.lines() {
-        if let Some(new_box) = cap_at(&Box::from_str(line), &init) {
-            boxes = boxes
-                .iter()
-                .flat_map(|existing| split_existing(existing, &new_box))
-                .filter(|b| b.state == State::On)
-                .collect();
-            if new_box.state == State::On {
-                boxes.push(new_box);
-            }
-        }
-    }
-    boxes.iter().map(|b| b.size()).sum()
-}
-
 fn split_existing(existing: &Box, new_box: &Box) -> Vec<Box> {
-    if new_box.contains(existing) {
-        return vec![];
-    }
     if !new_box.intersects(existing) {
         return vec![existing.clone()];
     }
-    let mut result = vec![];
-    fn axis_split_points((p1, p2): (i32, i32), (a, b): (i32, i32)) -> Vec<i32> {
+    if new_box.contains(existing) {
+        return vec![];
+    }
+    fn axis_split_points((p1, p2): (i32, i32), (a, b): (i32, i32)) -> Vec<(i32, i32)> {
         let mut result = vec![p1];
         if a > p1 && a < p2 {
             result.push(a);
@@ -106,28 +85,40 @@ fn split_existing(existing: &Box, new_box: &Box) -> Vec<Box> {
         }
         result.push(p2);
         result
-    }
-    for (x1, x2) in axis_split_points(existing.x, new_box.x)
-        .iter()
-        .tuple_windows()
-    {
-        for (y1, y2) in axis_split_points(existing.y, new_box.y)
             .iter()
             .tuple_windows()
-        {
-            for (z1, z2) in axis_split_points(existing.z, new_box.z)
-                .iter()
-                .tuple_windows()
-            {
-                let (x, y, z) = ((*x1, *x2), (*y1, *y2), (*z1, *z2));
-                let bn = Box::new(x, y, z, State::On);
-                if !new_box.contains(&bn) {
-                    result.push(bn);
+            .map(|(&a, &b)| (a, b))
+            .collect()
+    }
+    let mut result = vec![];
+    for (x1, x2) in axis_split_points(existing.x, new_box.x) {
+        for (y1, y2) in axis_split_points(existing.y, new_box.y) {
+            for (z1, z2) in axis_split_points(existing.z, new_box.z) {
+                let piece = Box::new((x1, x2), (y1, y2), (z1, z2), State::On);
+                if !new_box.contains(&piece) {
+                    result.push(piece);
                 }
             }
         }
     }
     result
+}
+
+fn part1(input: &str) -> usize {
+    let init = Box::new((-50, 51), (-50, 51), (-50, 51), State::On);
+    let mut boxes: Vec<Box> = vec![];
+    for line in input.lines() {
+        if let Some(new_box) = cap_at(&Box::from_str(line), &init) {
+            boxes = boxes
+                .iter()
+                .flat_map(|existing| split_existing(existing, &new_box))
+                .collect();
+            if new_box.state == State::On {
+                boxes.push(new_box);
+            }
+        }
+    }
+    boxes.iter().map(|b| b.size()).sum()
 }
 
 fn part2(input: &str) -> usize {
@@ -137,7 +128,6 @@ fn part2(input: &str) -> usize {
         boxes = boxes
             .iter()
             .flat_map(|existing| split_existing(existing, &new_box))
-            .filter(|b| b.state == State::On)
             .collect();
         if new_box.state == State::On {
             boxes.push(new_box);
