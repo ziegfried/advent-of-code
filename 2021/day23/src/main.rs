@@ -119,17 +119,12 @@ fn is_unobstructed(hallway: &Hallway, pos: usize, a: usize, b: usize) -> bool {
 }
 
 fn hallway_dist(a: usize, b: usize) -> usize {
-    let from = usize::min(a, b);
-    let to = usize::max(a, b);
-    to - from
+    let min = usize::min(a, b);
+    let max = usize::max(a, b);
+    max - min
 }
 
-fn possible_moves_from_hallway(
-    hallway_idx: usize,
-    state: &State,
-    // hallway: &Hallway,
-    // dest_rooms: &DestRooms,
-) -> Option<Move> {
+fn possible_moves_from_hallway(hallway_idx: usize, state: &State) -> Option<Move> {
     match state.hallway[hallway_idx] {
         Some(hallway_a) => {
             let new_home = home_for(hallway_a);
@@ -144,13 +139,12 @@ fn possible_moves_from_hallway(
                     .iter()
                     .all(|v| v == &None || v == &Some(hallway_a))
                 {
-                    let (new_home_top, _) =
-                        find_top(&state.dest_rooms[new_home]).unwrap_or((4, Amber));
+                    let new_home_top = find_open_slot(&state.dest_rooms[new_home]);
                     return Some(Move(
                         hallway_a,
                         Pos::Hallway(hallway_idx),
-                        Pos::DestRoom(new_home, new_home_top - 1),
-                        (move_inout_cost(new_home_top - 1)
+                        Pos::DestRoom(new_home, new_home_top),
+                        (move_inout_cost(new_home_top)
                             + hallway_dist(hallway_idx, new_home_hallway_idx))
                             * move_energy(hallway_a),
                     ));
@@ -162,8 +156,8 @@ fn possible_moves_from_hallway(
     None
 }
 
-fn can_move_to_hallway(room: usize) -> bool {
-    room != 2 && room != 4 && room != 6 && room != 8
+fn can_move_to_hallway(idx: usize) -> bool {
+    idx != 2 && idx != 4 && idx != 6 && idx != 8
 }
 
 fn find_top(dest_room: &DestRoom) -> Option<(usize, Amphipod)> {
@@ -174,16 +168,20 @@ fn find_top(dest_room: &DestRoom) -> Option<(usize, Amphipod)> {
         .map(|(idx, a)| (idx, a.unwrap()))
 }
 
+fn find_open_slot(dest_room: &DestRoom) -> usize {
+    for i in (0..4).rev() {
+        if dest_room[i] == None {
+            return i;
+        }
+    }
+    panic!();
+}
+
 fn move_inout_cost(slot: usize) -> usize {
     slot + 1
 }
 
-fn possible_moves_from_room(
-    room_idx: usize,
-    state: &State,
-    // hallway: &Hallway,
-    // dest_rooms: &DestRooms,
-) -> Option<Vec<Move>> {
+fn possible_moves_from_room(room_idx: usize, state: &State) -> Option<Vec<Move>> {
     let dest_room = state.dest_rooms[room_idx];
     if let Some((top_slot, top_a)) = find_top(&dest_room) {
         if (top_slot..4).all(|i| dest_room[i] == Some(home_of(room_idx))) {
@@ -204,14 +202,13 @@ fn possible_moves_from_room(
                 .iter()
                 .all(|v| v == &None || v == &Some(top_a))
             {
-                let (new_home_slot, _) =
-                    find_top(&state.dest_rooms[new_home]).unwrap_or((4, Amber));
+                let new_home_slot = find_open_slot(&state.dest_rooms[new_home]);
                 result.push(Move(
                     top_a,
                     cur_pos.clone(),
-                    Pos::DestRoom(new_home, new_home_slot - 1),
+                    Pos::DestRoom(new_home, new_home_slot),
                     (move_inout_cost(top_slot)
-                        + move_inout_cost(new_home_slot - 1)
+                        + move_inout_cost(new_home_slot)
                         + hallway_dist(
                             dest_room_to_hallway(room_idx),
                             dest_room_to_hallway(new_home),
@@ -350,10 +347,7 @@ fn dbg_state(hallway: &Hallway, dest_rooms: &DestRooms) {
     println!();
 }
 
-fn make_moves(
-    state: &State,
-    memo: &mut HashMap<State, Option<usize>>,
-) -> Option<usize> {
+fn make_moves(state: &State, memo: &mut HashMap<State, Option<usize>>) -> Option<usize> {
     if is_complete(state) {
         return Some(0);
     }
