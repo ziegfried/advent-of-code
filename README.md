@@ -8,6 +8,7 @@ My solutions to [Advent of Code](https://adventofcode.com/) problems. Written in
 <details><summary>Advent of Code 2021</summary>
 <p>
 
+ - [Day 23](./2021/day23/src/main.rs)
  - [Day 22](./2021/day22/src/main.rs)
  - [Day 21](./2021/day21/src/main.rs)
  - [Day 20](./2021/day20/src/main.rs)
