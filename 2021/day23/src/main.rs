@@ -1,15 +1,22 @@
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 enum Amphipod {
     Amber,
     Bronze,
     Copper,
     Desert,
 }
-use Amphipod::*;
+use std::collections::HashMap;
 
+use Amphipod::*;
 type Hallway = [Option<Amphipod>; 11];
 type DestRoom = [Option<Amphipod>; 4];
 type DestRooms = [DestRoom; 4];
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+struct State {
+    hallway: Hallway,
+    dest_rooms: DestRooms,
+}
 
 fn dest_room_to_hallway(dest_room_idx: usize) -> usize {
     match dest_room_idx {
@@ -119,19 +126,26 @@ fn hallway_dist(a: usize, b: usize) -> usize {
 
 fn possible_moves_from_hallway(
     hallway_idx: usize,
-    hallway: &Hallway,
-    dest_rooms: &DestRooms,
+    state: &State,
+    // hallway: &Hallway,
+    // dest_rooms: &DestRooms,
 ) -> Option<Move> {
-    match hallway[hallway_idx] {
+    match state.hallway[hallway_idx] {
         Some(hallway_a) => {
             let new_home = home_for(hallway_a);
             let new_home_hallway_idx = dest_room_to_hallway(new_home);
-            if is_unobstructed(hallway, hallway_idx, hallway_idx, new_home_hallway_idx) {
-                if dest_rooms[new_home]
+            if is_unobstructed(
+                &state.hallway,
+                hallway_idx,
+                hallway_idx,
+                new_home_hallway_idx,
+            ) {
+                if state.dest_rooms[new_home]
                     .iter()
                     .all(|v| v == &None || v == &Some(hallway_a))
                 {
-                    let (new_home_top, _) = find_top(&dest_rooms[new_home]).unwrap_or((4, Amber));
+                    let (new_home_top, _) =
+                        find_top(&state.dest_rooms[new_home]).unwrap_or((4, Amber));
                     return Some(Move(
                         hallway_a,
                         Pos::Hallway(hallway_idx),
@@ -166,10 +180,11 @@ fn move_inout_cost(slot: usize) -> usize {
 
 fn possible_moves_from_room(
     room_idx: usize,
-    hallway: &Hallway,
-    dest_rooms: &DestRooms,
+    state: &State,
+    // hallway: &Hallway,
+    // dest_rooms: &DestRooms,
 ) -> Option<Vec<Move>> {
-    let dest_room = dest_rooms[room_idx];
+    let dest_room = state.dest_rooms[room_idx];
     if let Some((top_slot, top_a)) = find_top(&dest_room) {
         if (top_slot..4).all(|i| dest_room[i] == Some(home_of(room_idx))) {
             return None;
@@ -179,17 +194,18 @@ fn possible_moves_from_room(
         let new_home = home_for(top_a);
         if new_home != room_idx
             && is_unobstructed(
-                hallway,
+                &state.hallway,
                 99,
                 dest_room_to_hallway(room_idx),
                 dest_room_to_hallway(new_home),
             )
         {
-            if dest_rooms[new_home]
+            if state.dest_rooms[new_home]
                 .iter()
                 .all(|v| v == &None || v == &Some(top_a))
             {
-                let (new_home_slot, _) = find_top(&dest_rooms[new_home]).unwrap_or((4, Amber));
+                let (new_home_slot, _) =
+                    find_top(&state.dest_rooms[new_home]).unwrap_or((4, Amber));
                 result.push(Move(
                     top_a,
                     cur_pos.clone(),
@@ -207,7 +223,7 @@ fn possible_moves_from_room(
 
         for hw in 0..11 {
             if can_move_to_hallway(hw) {
-                if is_unobstructed(hallway, 99, dest_room_to_hallway(room_idx), hw) {
+                if is_unobstructed(&state.hallway, 99, dest_room_to_hallway(room_idx), hw) {
                     result.push(Move(
                         top_a,
                         cur_pos.clone(),
@@ -224,13 +240,12 @@ fn possible_moves_from_room(
             return Some(result);
         }
     }
-
     None
 }
 
-fn apply_move(m: &Move, hallway: &Hallway, dest_rooms: &DestRooms) -> (Hallway, DestRooms) {
-    let mut hallway = hallway.clone();
-    let mut dest_rooms = dest_rooms.clone();
+fn apply_move(m: &Move, state: &State) -> State {
+    let mut hallway = state.hallway.clone();
+    let mut dest_rooms = state.dest_rooms.clone();
     let Move(a, from, to, _cost) = m;
     match from {
         &Pos::DestRoom(idx, slot) => {
@@ -252,20 +267,22 @@ fn apply_move(m: &Move, hallway: &Hallway, dest_rooms: &DestRooms) -> (Hallway, 
             hallway[idx] = Some(*a);
         }
     }
-    (hallway, dest_rooms)
+    State {
+        hallway,
+        dest_rooms,
+    }
 }
 
-fn all_possible_moves(hallway: &Hallway, dest_rooms: &DestRooms) -> Vec<Move> {
+fn all_possible_moves(state: &State) -> Vec<Move> {
     let dr1_moves = (0..4)
-        .filter_map(|dr| possible_moves_from_room(dr, hallway, dest_rooms))
+        .filter_map(|dr| possible_moves_from_room(dr, state))
         .flat_map(|v| v);
-    let hallway_moves =
-        (0..11usize).filter_map(|room| possible_moves_from_hallway(room, hallway, dest_rooms));
+    let hallway_moves = (0..11usize).filter_map(|room| possible_moves_from_hallway(room, state));
     dr1_moves.chain(hallway_moves).collect()
 }
 
-fn is_complete(_hallway: &Hallway, dest_rooms: &DestRooms) -> bool {
-    dest_rooms.iter().enumerate().all(|(idx, dr)| {
+fn is_complete(state: &State) -> bool {
+    state.dest_rooms.iter().enumerate().all(|(idx, dr)| {
         let a = home_of(idx);
         dr.iter().all(|da| da == &Some(a))
     })
@@ -333,52 +350,28 @@ fn dbg_state(hallway: &Hallway, dest_rooms: &DestRooms) {
     println!();
 }
 
-fn opt_min(a: Option<usize>, b: Option<usize>) -> Option<usize> {
-    match (a, b) {
-        (None, None) => None,
-        (Some(a), None) => Some(a),
-        (None, Some(b)) => Some(b),
-        (Some(a), Some(b)) => Some(usize::min(a, b)),
-    }
-}
-
 fn make_moves(
-    hallway: &Hallway,
-    dest_rooms: &DestRooms,
-    cost: usize,
-    stop_at: Option<usize>,
+    state: &State,
+    memo: &mut HashMap<State, Option<usize>>,
 ) -> Option<usize> {
-    if is_complete(hallway, dest_rooms) {
-        return Some(cost);
+    if is_complete(state) {
+        return Some(0);
     }
-    if let Some(stop_at) = stop_at {
-        if cost >= stop_at {
-            return None;
-        }
+    if let Some(previous_result) = memo.get(state) {
+        return *previous_result;
     }
-    let moves = all_possible_moves(hallway, dest_rooms);
-    if moves.len() == 0 {
-        return None;
-    }
-    let mut cur_min = None;
-    for m in moves {
-        let Move(_, _, _, move_cost) = m;
-        let new_cost = cost + move_cost;
-        if let Some(cur_min) = opt_min(cur_min, stop_at) {
-            if new_cost > cur_min {
-                continue;
-            }
-        }
-        let (new_hallway, new_dest_rooms) = apply_move(&m, hallway, dest_rooms);
-        let new_min = make_moves(
-            &new_hallway,
-            &new_dest_rooms,
-            new_cost,
-            opt_min(cur_min, stop_at),
-        );
-        cur_min = opt_min(cur_min, new_min);
-    }
-    cur_min
+    let result = {
+        all_possible_moves(state)
+            .iter()
+            .filter_map(|m| {
+                let Move(_, _, _, move_cost) = m;
+                let new_state = apply_move(m, state);
+                make_moves(&new_state, memo).map(|sub_cost| move_cost + sub_cost)
+            })
+            .min()
+    };
+    memo.insert(state.clone(), result);
+    result
 }
 
 fn part1(input: &str) -> usize {
@@ -386,7 +379,11 @@ fn part1(input: &str) -> usize {
         None, None, None, None, None, None, None, None, None, None, None,
     ];
     let dest_rooms = parse_dest_rooms(input);
-    make_moves(&hallway, &dest_rooms, 0, None).unwrap()
+    let state = State {
+        hallway,
+        dest_rooms,
+    };
+    make_moves(&state, &mut HashMap::new()).unwrap()
 }
 
 fn part2(input: &str) -> usize {
@@ -394,7 +391,6 @@ fn part2(input: &str) -> usize {
         None, None, None, None, None, None, None, None, None, None, None,
     ];
     let mut dest_rooms = parse_dest_rooms(input);
-
     dest_rooms[0][3] = dest_rooms[0][1];
     dest_rooms[1][3] = dest_rooms[1][1];
     dest_rooms[2][3] = dest_rooms[2][1];
@@ -407,8 +403,11 @@ fn part2(input: &str) -> usize {
     dest_rooms[2][2] = Some(Amber);
     dest_rooms[3][1] = Some(Amber);
     dest_rooms[3][2] = Some(Copper);
-
-    make_moves(&hallway, &dest_rooms, 0, None).unwrap()
+    let state = State {
+        hallway,
+        dest_rooms,
+    };
+    make_moves(&state, &mut HashMap::new()).unwrap()
 }
 
 fn main() {
@@ -421,7 +420,7 @@ fn test_part1() {
     assert_eq!(part1(include_str!("test.txt")), 12521);
 }
 
-// #[test]
-// fn test_part2() {
-//     assert_eq!(part2(include_str!("test.txt")), 44169);
-// }
+#[test]
+fn test_part2() {
+    assert_eq!(part2(include_str!("test.txt")), 44169);
+}
