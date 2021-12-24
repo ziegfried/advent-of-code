@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use hashbrown::HashSet;
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, Copy, PartialOrd, Ord)]
 enum Variable {
@@ -94,12 +94,13 @@ fn resolve_value(val: Value, variables: &[i64; 4]) -> i64 {
     }
 }
 
-fn execute(instructions: &[Instruction], input: &[i64], variables: &mut [i64; 4]) -> i64 {
-    let mut input = input.iter();
+fn execute(instructions: &[Instruction], input: i64, variables: &mut [i64; 4]) -> i64 {
+    let mut input = Some(input);
     for i in instructions {
         match i.clone() {
             Inp(v) => {
-                write_var(v, *input.next().unwrap(), variables);
+                write_var(v, input.unwrap(), variables);
+                input = None;
             }
             Add(a, b) => {
                 let res = read_var(a, variables) + resolve_value(b, variables);
@@ -155,39 +156,43 @@ fn find_input(
     chunk: usize,
     vars: [i64; 4],
     chunks: &Vec<Vec<Instruction>>,
-    dead_ends: &mut HashSet<(usize, [i64; 4])>,
+    digits: &Vec<i64>,
+    dead_ends: &mut HashSet<(usize, i64)>,
     value: i64,
-    max: bool,
 ) -> Option<i64> {
-    if dead_ends.contains(&(chunk, vars)) {
+    if dead_ends.contains(&(chunk, read_var(Z, &vars))) {
         return None;
     }
     let instructions = &chunks[chunk];
-    let digits: Vec<i64> = if max {
-        (1..=9).rev().collect()
-    } else {
-        (1..=9).collect()
-    };
     for d in digits {
         let value = value * 10 + d;
         let mut new_vars = vars.clone();
-        let z = execute(instructions, &vec![d], &mut new_vars);
+        let z = execute(instructions, *d, &mut new_vars);
         if chunk == chunks.len() - 1 {
             if z == 0 {
                 return Some(value);
             }
-        } else if let Some(res) = find_input(chunk + 1, new_vars, chunks, dead_ends, value, max) {
+        } else if let Some(res) = find_input(chunk + 1, new_vars, chunks, digits, dead_ends, value)
+        {
             return Some(res);
         }
     }
-    dead_ends.insert((chunk, vars));
+    dead_ends.insert((chunk, read_var(Z, &vars)));
     None
 }
 
 fn part1(input: &str) -> i64 {
     let instructions = parse(input);
     let chunks = split_into_chunks(&instructions);
-    find_input(0, Default::default(), &chunks, &mut HashSet::new(), 0, true).unwrap()
+    find_input(
+        0,
+        Default::default(),
+        &chunks,
+        &(1..=9).rev().collect(),
+        &mut HashSet::new(),
+        0,
+    )
+    .unwrap()
 }
 
 fn part2(input: &str) -> i64 {
@@ -197,9 +202,9 @@ fn part2(input: &str) -> i64 {
         0,
         Default::default(),
         &chunks,
+        &(1..=9).collect(),
         &mut HashSet::new(),
         0,
-        false,
     )
     .unwrap()
 }
