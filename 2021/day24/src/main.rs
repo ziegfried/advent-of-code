@@ -1,6 +1,6 @@
 use hashbrown::HashSet;
 
-#[derive(Debug, Hash, PartialEq, Eq, Clone, Copy, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy)]
 enum Variable {
     W,
     X,
@@ -27,39 +27,34 @@ enum Instruction {
 use Instruction::*;
 use Variable::*;
 
-fn parse_variable(s: &str) -> Variable {
-    match s {
-        "w" => W,
-        "x" => X,
-        "y" => Y,
-        "z" => Z,
-        v => panic!("invalid variable {}", v),
-    }
-}
-
-fn parse_value(s: &str) -> Value {
-    use Value::*;
-    match s {
-        "w" => Var(W),
-        "x" => Var(X),
-        "y" => Var(Y),
-        "z" => Var(Z),
-        v => Literal(v.parse::<i64>().unwrap()),
-    }
-}
-
 fn parse(input: &str) -> Vec<Instruction> {
+    fn parse_variable(s: &str) -> Result<Variable, ()> {
+        match s {
+            "w" => Ok(W),
+            "x" => Ok(X),
+            "y" => Ok(Y),
+            "z" => Ok(Z),
+            _ => Err(()),
+        }
+    }
+    fn parse_value(s: &str) -> Value {
+        use Value::*;
+        match parse_variable(s) {
+            Ok(var) => Var(var),
+            Err(_) => Literal(s.parse::<i64>().unwrap()),
+        }
+    }
     input
         .lines()
         .map(|line| {
             let parts: Vec<&str> = line.split(' ').collect();
             match parts[0] {
-                "inp" => Inp(parse_variable(parts[1])),
-                "add" => Add(parse_variable(parts[1]), parse_value(parts[2])),
-                "mul" => Mul(parse_variable(parts[1]), parse_value(parts[2])),
-                "div" => Div(parse_variable(parts[1]), parse_value(parts[2])),
-                "mod" => Mod(parse_variable(parts[1]), parse_value(parts[2])),
-                "eql" => Eql(parse_variable(parts[1]), parse_value(parts[2])),
+                "inp" => Inp(parse_variable(parts[1]).unwrap()),
+                "add" => Add(parse_variable(parts[1]).unwrap(), parse_value(parts[2])),
+                "mul" => Mul(parse_variable(parts[1]).unwrap(), parse_value(parts[2])),
+                "div" => Div(parse_variable(parts[1]).unwrap(), parse_value(parts[2])),
+                "mod" => Mod(parse_variable(parts[1]).unwrap(), parse_value(parts[2])),
+                "eql" => Eql(parse_variable(parts[1]).unwrap(), parse_value(parts[2])),
                 _ => panic!(),
             }
         })
@@ -138,7 +133,12 @@ fn split_into_chunks(instructions: &Vec<Instruction>) -> Vec<Vec<Instruction>> {
             .enumerate()
             .find(|(i, inst)| i > &input_idx && matches!(inst, Inp(_)))
         {
-            result.push(instructions[input_idx..next_input].into_iter().cloned().collect());
+            result.push(
+                instructions[input_idx..next_input]
+                    .into_iter()
+                    .cloned()
+                    .collect(),
+            );
             input_idx = next_input;
         } else {
             result.push(instructions[input_idx..].into_iter().cloned().collect());
