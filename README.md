@@ -5,6 +5,15 @@ My solutions to [Advent of Code](https://adventofcode.com/) problems. Written in
 ## Solutions
 
 <!-- INDEX-START -->
+<details><summary>Advent of Code 2022</summary>
+<p>
+
+ - [Day 3](./2022/day03/src/main.rs)
+ - [Day 2](./2022/day02/src/main.rs)
+ - [Day 1](./2022/day01/src/main.rs)
+
+</p>
+</details>
 <details><summary>Advent of Code 2021</summary>
 <p>
 
