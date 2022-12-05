@@ -1,12 +1,12 @@
-WMLF
-BZVMF
-HVRSLQ
-FSVQPMTJ
-LSW
-FVPMRJW
-JQCPNRF
-VHPSZWRB
-BMJCGHZW
+            [J]             [B] [W]
+            [T]     [W] [F] [R] [Z]
+        [Q] [M]     [J] [R] [W] [H]
+    [F] [L] [P]     [R] [N] [Z] [G]
+[F] [M] [S] [Q]     [M] [P] [S] [C]
+[L] [V] [R] [V] [W] [P] [C] [P] [J]
+[M] [Z] [V] [S] [S] [V] [Q] [H] [M]
+[W] [B] [H] [F] [L] [F] [J] [V] [B]
+ 1   2   3   4   5   6   7   8   9 
 
 move 3 from 5 to 7
 move 2 from 8 to 9

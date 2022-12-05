@@ -1,16 +1,33 @@
 use itertools::Itertools;
 
+fn parse_stacks(input: &str) -> Vec<Vec<char>> {
+    let mut lines: Vec<&str> = input.lines().collect();
+    let mut stacks = lines
+        .pop()
+        .unwrap()
+        .split_whitespace()
+        .map(|_| Vec::new())
+        .collect::<Vec<Vec<char>>>();
+    for line in lines {
+        (0..stacks.len()).for_each(|stack_idx| {
+            let char_idx = stack_idx * 3 + stack_idx + 1;
+            let s = &line[char_idx..char_idx + 1];
+            if s != " " {
+                stacks[stack_idx].push(s.chars().next().unwrap());
+            }
+        });
+    }
+    stacks
+        .iter()
+        .map(|s| s.iter().copied().rev().collect())
+        .collect()
+}
+
 fn part1(input: &str) -> String {
     let (stacks, instructions) = input.split_once("\n\n").unwrap();
-
-    let mut stacks = stacks
-        .lines()
-        .map(|line| line.chars().collect::<Vec<char>>())
-        .collect::<Vec<Vec<char>>>();
-
+    let mut stacks = parse_stacks(stacks);
     for line in instructions.lines() {
         let (_, amount, _, src, _, dest) = line.split_whitespace().collect_tuple().unwrap();
-
         let amount: u32 = amount.parse().unwrap();
         let src: usize = src.parse().unwrap();
         let dest: usize = dest.parse().unwrap();
@@ -24,20 +41,12 @@ fn part1(input: &str) -> String {
             stacks[dest - 1].push(el);
         }
     }
-
-    let s: String = stacks.iter().map(|s| s[s.len()-1]).collect();
-    
-    s
+    stacks.iter().map(|s| s[s.len() - 1]).collect()
 }
 
 fn part2(input: &str) -> String {
     let (stacks, instructions) = input.split_once("\n\n").unwrap();
-
-    let mut stacks = stacks
-        .lines()
-        .map(|line| line.chars().collect::<Vec<char>>())
-        .collect::<Vec<Vec<char>>>();
-
+    let mut stacks = parse_stacks(stacks);
     for line in instructions.lines() {
         let (_, amount, _, src, _, dest) = line.split_whitespace().collect_tuple().unwrap();
 
@@ -54,10 +63,7 @@ fn part2(input: &str) -> String {
             stacks[dest - 1].push(el);
         }
     }
-
-    let s: String = stacks.iter().map(|s| s[s.len()-1]).collect();
-    
-    s
+    stacks.iter().map(|s| s[s.len() - 1]).collect()
 }
 
 fn main() {
