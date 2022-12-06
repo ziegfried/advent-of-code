@@ -4,13 +4,20 @@ on:
         branches:
             - main
 env:
-  CARGO_TERM_COLOR: always
+    CARGO_TERM_COLOR: always
 jobs:
     update:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v2
-            - run: cargo install --path tools/aoc-cli 
+            - uses: actions/cache@v2
+              with:
+                  path: |
+                      ~/.cargo/registry
+                      ~/.cargo/git
+                      tools/aoc-cli/target
+                  key: ${{ runner.os }}-cargo-${{ hashFiles('tools/aoc-cli/Cargo.lock') }}
+            - run: cargo install --path tools/aoc-cli
             - run: aoc generate-index
             - name: push changes
               run: |

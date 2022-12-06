@@ -60,7 +60,7 @@ pub fn generate_index(base_dir: String, filename: String) -> anyhow::Result<()> 
         for day in days.iter().rev() {
             contents.push_str(
                 format!(
-                    " - [Day {day}](./{year}/day{day:02}/src/main.rs)\n",
+                    " - [{year} Day {day}](./{year}/day{day:02}/src/main.rs)\n",
                     day = day,
                     year = year
                 )

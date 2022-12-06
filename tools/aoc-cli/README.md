@@ -35,7 +35,7 @@ $ aoc new
 ### Download puzzle input
 
 Run `aoc input` in a project directory to download the puzzle input.
-It will store it in `src/in.txt` by default.
+It will store it in `src/input.txt` by default.
 
 ```sh-session
 $ aoc input

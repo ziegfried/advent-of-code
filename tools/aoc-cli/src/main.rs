@@ -62,6 +62,9 @@ enum Opt {
         #[structopt(long, default_value = "README.md")]
         file: String,
     },
+
+    /// Run tests for the given day
+    Test { part: u16 },
 }
 
 fn next_day(year: u16) -> Result<u16> {
@@ -164,7 +167,7 @@ fn execute() -> anyhow::Result<()> {
 
             let output = if output == "<auto>" {
                 if aoc_env::src_folder_exists()? {
-                    "src/in.txt".to_string()
+                    "src/input.txt".to_string()
                 } else {
                     "-".to_string()
                 }
@@ -176,15 +179,14 @@ fn execute() -> anyhow::Result<()> {
                 let proceed = if !fs_utils::exists(&output) || fs_utils::is_file_empty(&output)? {
                     true
                 } else {
-                    let answer = Confirm::new()
+                    Confirm::new()
                         .with_prompt(format!("File {} already exists, overwrite?", output))
                         .default(true)
-                        .interact()?;
-                    answer
+                        .interact()?
                 };
                 if proceed {
                     eprintln!("Writing input file to {}", output);
-                    fs::write(output, input_contents.trim())?;
+                    fs::write(output, input_contents)?;
                 } else {
                     eprintln!("Aborted writing input file to {}", output);
                 }
@@ -223,7 +225,10 @@ fn execute() -> anyhow::Result<()> {
 
             fs::write(
                 project_dir.join("src").join("main.rs"),
-                include_str!("tmpl/main.rs"),
+                include_str!("tmpl/main.rs").replace(
+                    "{{url}}",
+                    format!("https://adventofcode.com/{}/day/{}", year, day).as_str(),
+                ),
             )?;
             fs::write(
                 project_dir.join(".gitignore"),
@@ -234,7 +239,7 @@ fn execute() -> anyhow::Result<()> {
                 include_str!("tmpl/Cargo.toml"),
             )?;
             fs::write(project_dir.join("src").join("test.txt"), "")?;
-            fs::write(project_dir.join("src").join("in.txt"), "")?;
+            fs::write(project_dir.join("src").join("input.txt"), "")?;
             fs::write(
                 project_dir.join("temp").join("test.js"),
                 include_str!("tmpl/test.js"),
@@ -259,6 +264,20 @@ fn execute() -> anyhow::Result<()> {
         }
         GenerateIndex { dir, file } => {
             generate_index::generate_index(dir, file)?;
+        }
+        Test { part } => {
+            let (year, day) = aoc_env::aoc_problem_in_cwd()?;
+            eprintln!("AOC {} day {} running test for part{}:", year, day, part);
+            Command::new("cargo")
+                .args([
+                    "test",
+                    "--",
+                    format!("test_part{}", part).as_str(),
+                    "--exact",
+                    "--nocapture",
+                ])
+                .env("RUSTFLAGS", "-Awarnings")
+                .status()?;
         }
     };
     Ok(())

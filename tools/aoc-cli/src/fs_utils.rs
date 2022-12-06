@@ -17,5 +17,5 @@ pub fn file_name(path: &Path) -> Result<String> {
             return Ok(String::from(name));
         }
     }
-    return Err(anyhow!("Unable to extract file name from path"));
+    Err(anyhow!("Unable to extract file name from path"))
 }
