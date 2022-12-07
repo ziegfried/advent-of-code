@@ -8,6 +8,7 @@ My solutions to [Advent of Code](https://adventofcode.com/) problems. Written in
 <details><summary>Advent of Code 2022</summary>
 <p>
 
+ - [2022 Day 7](./2022/day07/src/main.rs)
  - [2022 Day 6](./2022/day06/src/main.rs)
  - [2022 Day 5](./2022/day05/src/main.rs)
  - [2022 Day 4](./2022/day04/src/main.rs)
