@@ -209,7 +209,9 @@ fn execute() -> anyhow::Result<()> {
                 return Err(anyhow!("No more days for year {}", year));
             }
 
-            let project_dir = env::current_dir()?
+            let root_dir = env::current_dir()?;
+
+            let project_dir = root_dir
                 .join(format!("{}", year))
                 .join(format!("day{:02}", day));
             eprintln!("Creating new project {}/day{:02}", year, day);
@@ -240,10 +242,18 @@ fn execute() -> anyhow::Result<()> {
             )?;
             fs::write(project_dir.join("src").join("test.txt"), "")?;
             fs::write(project_dir.join("src").join("input.txt"), "")?;
-            fs::write(
-                project_dir.join("temp").join("test.js"),
-                include_str!("tmpl/test.js"),
-            )?;
+
+            let tmpl_temp = root_dir.join("tools/aoc-cli/src/tmpl/temp");
+            if tmpl_temp.is_dir() {
+                eprintln!("Copying temp dir:");
+                for file in tmpl_temp.read_dir()? {
+                    let file = file?;
+                    eprintln!(" - {:?}", file.file_name());
+                    if file.file_type()?.is_file() {
+                        fs::copy(file.path(), project_dir.join("temp").join(file.file_name()))?;
+                    }
+                }
+            }
 
             if open
                 || Confirm::new()

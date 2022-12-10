@@ -39,6 +39,8 @@ pub fn generate_index(base_dir: String, filename: String) -> anyhow::Result<()> 
 
     eprintln!("Found year directories {:?}", years);
 
+    let latest_year = years.iter().max().unwrap();
+
     for year in years.iter().rev() {
         let mut days = vec![];
         for folder in list_dir(format!("{}/{}", &base_dir, year))? {
@@ -50,13 +52,17 @@ pub fn generate_index(base_dir: String, filename: String) -> anyhow::Result<()> 
         }
         days.sort_unstable();
 
-        contents.push_str(
-            format!(
-                "<details><summary>Advent of Code {year}</summary>\n<p>\n\n",
-                year = year
-            )
-            .as_str(),
-        );
+        if year == latest_year {
+            contents.push_str(format!("Advent of Code {year}\n\n", year = year).as_str())
+        } else {
+            contents.push_str(
+                format!(
+                    "<details><summary>Advent of Code {year}</summary>\n<p>\n\n",
+                    year = year
+                )
+                .as_str(),
+            );
+        }
         for day in days.iter().rev() {
             contents.push_str(
                 format!(
@@ -67,7 +73,11 @@ pub fn generate_index(base_dir: String, filename: String) -> anyhow::Result<()> 
                 .as_str(),
             );
         }
-        contents.push_str("\n</p>\n</details>\n");
+        if year == latest_year {
+            contents.push('\n');
+        } else {
+            contents.push_str("\n</p>\n</details>\n");
+        }
     }
 
     let readme_path = format!("{}/{}", &base_dir, &filename);
