@@ -1,6 +1,6 @@
 # Advent of Code
 
-My solutions to [Advent of Code](https://adventofcode.com/) problems. Written in Rust. Each problem is in it's own folder as a cargo package with a binary target.
+My solutions to [Advent of Code](https://adventofcode.com/) problems. Written in Rust. Each one is in it's own cargo project.
 
 ## Solutions
 
@@ -137,7 +137,7 @@ $ cd 2020/day1
 $ cargo run
 ```
 
-For some problems you may need to build/run the release binary for the program to complete in reasonable time.
+For some problems you may need to build/run the release binary for the program to complete in reasonable time, the debug build may be too slow.
 
 ```sh-session
 $ cargo run --release
