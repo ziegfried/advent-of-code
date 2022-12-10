@@ -1,71 +1,70 @@
 // Problem: https://adventofcode.com/2022/day/10
 
 fn part1(input: &str) -> usize {
-    struct Computer {
+    struct System {
         cycle: usize,
         x: i32,
         result: usize,
     }
-    let mut computer = Computer {
+    let mut sys = System {
         cycle: 0,
         x: 1,
         result: 0,
     };
-    fn inc(c: &mut Computer) {
-        c.cycle += 1;
-        if (c.cycle as i32 - 20) % 40 == 0 {
-            c.result += c.x as usize * c.cycle;
+    fn inc(sys: &mut System) {
+        sys.cycle += 1;
+        if (sys.cycle as i32 - 20) % 40 == 0 {
+            sys.result += sys.x as usize * sys.cycle;
         }
     }
 
     for inst in input.trim().lines() {
         if inst == "noop" {
-            inc(&mut computer);
+            inc(&mut sys);
         } else {
-            inc(&mut computer);
+            inc(&mut sys);
             let (_, amount) = inst.split_once(' ').unwrap();
             let amount: i32 = amount.parse().unwrap();
-            inc(&mut computer);
-            computer.x += amount;
+            inc(&mut sys);
+            sys.x += amount;
         }
     }
 
-    computer.result
+    sys.result
 }
 
 fn part2(input: &str) -> String {
-    struct Computer {
+    struct System {
         cycle: usize,
         x: i32,
         crt: Vec<Vec<char>>,
     }
-    let mut computer = Computer {
+    let mut sys = System {
         cycle: 0,
         x: 1,
         crt: vec![vec![' '; 40]; 6],
     };
-    fn inc(c: &mut Computer) {
-        let row = c.cycle / 40;
-        let pos = c.cycle % 40;
-        let is_sprite_drawn = ((c.x - 1)..=(c.x + 1)).contains(&(pos as i32));
-        c.crt[row][pos] = if is_sprite_drawn { '#' } else { '.' };
-        c.cycle += 1;
+    fn inc(sys: &mut System) {
+        let row = sys.cycle / 40;
+        let pos = sys.cycle % 40;
+        let is_sprite_drawn = ((sys.x - 1)..=(sys.x + 1)).contains(&(pos as i32));
+        sys.crt[row][pos] = if is_sprite_drawn { '#' } else { '.' };
+        sys.cycle += 1;
     }
 
     for inst in input.trim().lines() {
         if inst == "noop" {
-            inc(&mut computer);
+            inc(&mut sys);
         } else {
-            inc(&mut computer);
+            inc(&mut sys);
             let (_, amount) = inst.split_once(' ').unwrap();
             let amount: i32 = amount.parse().unwrap();
-            inc(&mut computer);
-            computer.x += amount;
+            inc(&mut sys);
+            sys.x += amount;
         }
     }
 
-    computer
-        .crt
+    sys.crt
         .iter()
         .map(|line| line.iter().collect::<String>())
         .collect::<Vec<_>>()
@@ -86,8 +85,7 @@ fn test_part1() {
 fn test_part2() {
     assert_eq!(
         part2(include_str!("test.txt")),
-        r"\
-##..##..##..##..##..##..##..##..##..##..
+        r"##..##..##..##..##..##..##..##..##..##..
 ###...###...###...###...###...###...###.
 ####....####....####....####....####....
 #####.....#####.....#####.....#####.....
