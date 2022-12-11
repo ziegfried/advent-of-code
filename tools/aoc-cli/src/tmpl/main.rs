@@ -1,12 +1,10 @@
 // Problem: {{url}}
 
-type Result = usize;
-
-fn part1(input: &str) -> Result {
+fn part1(input: &str) -> usize {
     todo!()
 }
 
-fn part2(input: &str) -> Result {
+fn part2(input: &str) -> usize {
     todo!()
 }
 
