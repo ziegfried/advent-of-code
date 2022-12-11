@@ -112,34 +112,30 @@ fn part1(input: &str) -> usize {
         monkeys.iter().map(|m| (m.monkey_no, m.clone())).collect();
     let monkey_nos: Vec<usize> = monkeys.iter().map(|m| m.monkey_no).collect();
 
-    fn round(monkey_no: usize, monkey_map: &mut HashMap<usize, Monkey>) {
-        let (items, monkey) = {
-            let monkey = monkey_map.get_mut(&monkey_no).unwrap();
-            let items = monkey.items.clone();
-            monkey.items = vec![];
-            monkey.inspected += items.len();
-            (items, monkey.clone())
-        };
-        for item in items {
-            let v = match monkey.operation {
-                Operation::Square => item * item,
-                Operation::Multiply(m) => item * m,
-                Operation::Add(b) => item + b,
-            } / 3;
-
-            let push_to = if v % monkey.test == 0 {
-                monkey.if_true
-            } else {
-                monkey.if_false
-            };
-
-            monkey_map.get_mut(&push_to).unwrap().items.push(v);
-        }
-    }
-
     for _ in 0..20 {
         for monkey_no in monkey_nos.iter() {
-            round(*monkey_no, &mut monkey_map);
+            let (items, monkey) = {
+                let monkey = monkey_map.get_mut(monkey_no).unwrap();
+                let items = monkey.items.clone();
+                monkey.items = vec![];
+                monkey.inspected += items.len();
+                (items, monkey.clone())
+            };
+            for item in items {
+                let v = match monkey.operation {
+                    Operation::Square => item * item,
+                    Operation::Multiply(m) => item * m,
+                    Operation::Add(b) => item + b,
+                } / 3;
+
+                let push_to = if v % monkey.test == 0 {
+                    monkey.if_true
+                } else {
+                    monkey.if_false
+                };
+
+                monkey_map.get_mut(&push_to).unwrap().items.push(v);
+            }
         }
     }
 
@@ -154,36 +150,32 @@ fn part2(input: &str) -> usize {
         monkeys.iter().map(|m| (m.monkey_no, m.clone())).collect();
     let monkey_nos: Vec<usize> = monkeys.iter().map(|m| m.monkey_no).collect();
 
-    fn round(monkey_no: usize, monkey_map: &mut HashMap<usize, Monkey>, multiple: u64) {
-        let (items, monkey) = {
-            let monkey = monkey_map.get_mut(&monkey_no).unwrap();
-            let items = monkey.items.clone();
-            monkey.items = vec![];
-            monkey.inspected += items.len();
-            (items, monkey.clone())
-        };
-        for item in items {
-            let v = match monkey.operation {
-                Operation::Square => item * item,
-                Operation::Multiply(m) => item * m,
-                Operation::Add(b) => item + b,
-            } % multiple;
-
-            let push_to = if v % monkey.test == 0 {
-                monkey.if_true
-            } else {
-                monkey.if_false
-            };
-
-            monkey_map.get_mut(&push_to).unwrap().items.push(v);
-        }
-    }
-
-    let multiple = monkeys.iter().map(|m| m.test).product();
+    let multiple: u64 = monkeys.iter().map(|m| m.test).product();
 
     for _ in 0..10000 {
         for monkey_no in monkey_nos.iter() {
-            round(*monkey_no, &mut monkey_map, multiple);
+            let (items, monkey) = {
+                let monkey = monkey_map.get_mut(monkey_no).unwrap();
+                let items = monkey.items.clone();
+                monkey.items = vec![];
+                monkey.inspected += items.len();
+                (items, monkey.clone())
+            };
+            for item in items {
+                let v = match monkey.operation {
+                    Operation::Square => item * item,
+                    Operation::Multiply(m) => item * m,
+                    Operation::Add(b) => item + b,
+                } % multiple;
+
+                let push_to = if v % monkey.test == 0 {
+                    monkey.if_true
+                } else {
+                    monkey.if_false
+                };
+
+                monkey_map.get_mut(&push_to).unwrap().items.push(v);
+            }
         }
     }
 
