@@ -16,11 +16,7 @@ impl Add<Pos> for Pos {
     }
 }
 
-fn char_val(ch: char) -> i32 {
-    ch.to_digit(36).unwrap() as i32
-}
-
-fn find(grid: &Vec<Vec<i32>>, val: i32) -> Pos {
+fn find(grid: &Vec<Vec<u8>>, val: u8) -> Pos {
     for row in 0..grid.len() {
         for col in 0..grid[0].len() {
             if grid[row][col] == val {
@@ -33,7 +29,7 @@ fn find(grid: &Vec<Vec<i32>>, val: i32) -> Pos {
 
 #[derive(Debug)]
 struct Grid {
-    grid: Vec<Vec<i32>>,
+    grid: Vec<Vec<u8>>,
     rows: i32,
     cols: i32,
     start: Pos,
@@ -42,15 +38,15 @@ struct Grid {
 
 impl Grid {
     fn parse(input: &str) -> Self {
-        let mut grid: Vec<Vec<i32>> = input
+        let mut grid: Vec<Vec<u8>> = input
             .trim()
             .lines()
-            .map(|l| l.chars().map(char_val).collect())
+            .map(|l| l.chars().map(|ch| ch.to_string().as_bytes()[0]).collect())
             .collect();
-        let start = find(&grid, char_val('S'));
-        let dest = find(&grid, char_val('E'));
-        grid[start.0 as usize][start.1 as usize] = char_val('a');
-        grid[dest.0 as usize][dest.1 as usize] = char_val('z');
+        let start = find(&grid, b'S');
+        let dest = find(&grid, b'E');
+        grid[start.0 as usize][start.1 as usize] = b'a';
+        grid[dest.0 as usize][dest.1 as usize] = b'z';
         let rows = grid.len() as i32;
         let cols = grid[0].len() as i32;
         Self {
@@ -61,22 +57,27 @@ impl Grid {
             dest,
         }
     }
-    fn get(&self, pos: Pos) -> i32 {
+    fn get(&self, pos: Pos) -> u8 {
         self.grid[pos.0 as usize][pos.1 as usize]
     }
     fn is_valid(&self, pos: Pos) -> bool {
         pos.0 >= 0 && pos.1 >= 0 && pos.0 < self.rows && pos.1 < self.cols
     }
+    fn iter(&self) -> impl Iterator<Item = Pos> {
+        (0..self.rows)
+            .cartesian_product(0..self.cols)
+            .map(|(r, c)| Pos(r as i32, c as i32))
+    }
 }
 
-fn find_path(start: Pos, grid: &Grid, dest: Pos) -> Option<usize> {
+fn find_path(start: Pos, grid: &Grid) -> Option<usize> {
     let mut seen = HashSet::<Pos>::new();
     let mut queue = VecDeque::<(Pos, usize)>::new();
     queue.push_back((start, 0));
     while !queue.is_empty() {
         let (pos, cur_len) = queue.pop_front().unwrap();
         if !seen.contains(&pos) {
-            if pos == dest {
+            if pos == grid.dest {
                 return Some(cur_len);
             }
             seen.insert(pos);
@@ -93,17 +94,15 @@ fn find_path(start: Pos, grid: &Grid, dest: Pos) -> Option<usize> {
 
 fn part1(input: &str) -> usize {
     let grid = Grid::parse(input);
-    find_path(grid.start, &grid, grid.dest).unwrap()
+    find_path(grid.start, &grid).unwrap()
 }
 
 fn part2(input: &str) -> usize {
     let grid = Grid::parse(input);
-    let low_height = char_val('a');
-    (0..grid.rows)
-        .cartesian_product(0..grid.cols)
-        .map(|(r, c)| Pos(r as i32, c as i32))
+    let low_height = b'a';
+    grid.iter()
         .filter(|pos| grid.get(*pos) == low_height)
-        .filter_map(|pos| find_path(pos, &grid, grid.dest))
+        .filter_map(|pos| find_path(pos, &grid))
         .min()
         .unwrap()
 }
