@@ -155,14 +155,14 @@ fn part1(input: &str) -> usize {
     let abyss = grid.range().1 .1 + 1;
     let mut count = 0;
     loop {
-        if print_enabled {
-            print_grid(&grid);
-        }
         if drop_sand(sand_origin, &mut grid, abyss) {
             count += 1;
         } else {
             break;
         }
+    }
+    if print_enabled {
+        print_grid(&grid);
     }
     count
 }
@@ -215,14 +215,14 @@ fn part2(input: &str) -> usize {
     let mut grid = Grid2::from(build_grid(input));
     let mut count = 0;
     loop {
-        if print_enabled {
-            print_grid(&grid);
-        }
         if drop_sand(sand_origin, &mut grid, i32::MAX) {
             count += 1;
         } else {
             break;
         }
+    }
+    if print_enabled {
+        print_grid(&grid);
     }
     count
 }
