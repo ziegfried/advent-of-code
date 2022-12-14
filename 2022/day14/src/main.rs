@@ -108,7 +108,7 @@ fn build_grid(input: &str) -> Grid1 {
         })
         .collect();
     let mut grid = Grid1(HashMap::new());
-    for structure in structures.clone() {
+    for structure in structures {
         for i in 1..structure.len() {
             draw_line(&mut grid, structure[i - 1], structure[i]);
         }
