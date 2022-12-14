@@ -17,29 +17,13 @@ fn right(p: Point) -> Point {
     (p.0 + 1, p.1)
 }
 
-fn draw_line(grid: &mut impl Grid, (x0, y0): Point, (x1, y1): Point) {
-    fn range(a: i32, b: i32) -> RangeInclusive<i32> {
-        if a > b {
-            b..=a
-        } else {
-            a..=b
-        }
-    }
-
-    if x0 == x1 {
-        for y in range(y0, y1) {
-            grid.set((x0, y), '#');
-        }
-    } else if y0 == y1 {
-        for x in range(x0, x1) {
-            grid.set((x, y0), '#');
-        }
-    } else {
-        panic!("{},{} -> {},{}", x0, y0, x1, y1);
-    }
+trait Grid {
+    fn has(&self, p: Point) -> bool;
+    fn get(&self, p: Point) -> Option<char>;
+    fn range(&self) -> (Point, Point);
+    fn set(&mut self, p: Point, ch: char);
 }
 
-#[allow(unused)]
 fn print_grid(grid: &impl Grid) {
     let ((min_x, min_y), (max_x, max_y)) = grid.range();
 
@@ -56,19 +40,7 @@ fn print_grid(grid: &impl Grid) {
     println!();
 }
 
-fn is_settled(p: Point, grid: &impl Grid) -> bool {
-    grid.has(down(p)) && grid.has(down(left(p))) && grid.has(down(right(p)))
-}
-
-trait Grid {
-    fn has(&self, p: Point) -> bool;
-    fn get(&self, p: Point) -> Option<char>;
-    fn range(&self) -> (Point, Point);
-    fn set(&mut self, p: Point, ch: char);
-}
-
 struct Grid1(HashMap<Point, char>);
-
 impl Grid for Grid1 {
     fn has(&self, p: Point) -> bool {
         self.0.contains_key(&p)
@@ -95,6 +67,28 @@ impl Grid for Grid1 {
     }
     fn get(&self, p: Point) -> Option<char> {
         self.0.get(&p).copied()
+    }
+}
+
+fn draw_line(grid: &mut impl Grid, (x0, y0): Point, (x1, y1): Point) {
+    fn range(a: i32, b: i32) -> RangeInclusive<i32> {
+        if a > b {
+            b..=a
+        } else {
+            a..=b
+        }
+    }
+
+    if x0 == x1 {
+        for y in range(y0, y1) {
+            grid.set((x0, y), '#');
+        }
+    } else if y0 == y1 {
+        for x in range(x0, x1) {
+            grid.set((x, y0), '#');
+        }
+    } else {
+        panic!("{},{} -> {},{}", x0, y0, x1, y1);
     }
 }
 
@@ -127,8 +121,10 @@ fn drop_sand(sand: Point, grid: &mut impl Grid, abyss: i32) -> bool {
         return false;
     }
     let mut cur = sand;
-
-    while cur.1 < abyss && !is_settled(cur, grid) {
+    loop {
+        if cur.1 >= abyss {
+            return false;
+        }
         let next = down(cur);
 
         if grid.has(next) {
@@ -140,18 +136,16 @@ fn drop_sand(sand: Point, grid: &mut impl Grid, abyss: i32) -> bool {
                 cur = right(next);
                 continue;
             }
-            unreachable!();
+
+            // settled
+            break;
         } else {
             cur = next;
         }
     }
 
-    if cur.1 >= abyss {
-        false
-    } else {
-        grid.set(cur, 'o');
-        true
-    }
+    grid.set(cur, 'o');
+    true
 }
 
 fn part1(input: &str) -> usize {
@@ -173,43 +167,52 @@ fn part1(input: &str) -> usize {
     count
 }
 
-struct Grid2(HashMap<Point, char>, i32);
-
+struct Grid2 {
+    grid: HashMap<Point, char>,
+    floor: i32,
+}
 impl Grid for Grid2 {
     fn has(&self, p: Point) -> bool {
-        p.1 == self.1 || self.0.contains_key(&p)
+        p.1 == self.floor || self.grid.contains_key(&p)
     }
     fn set(&mut self, p: Point, ch: char) {
-        self.0.insert(p, ch);
+        self.grid.insert(p, ch);
     }
     fn range(&self) -> (Point, Point) {
         let (&min_x, &max_x) = self
-            .0
+            .grid
             .keys()
             .map(|(x, _)| x)
             .minmax()
             .into_option()
             .unwrap();
         let (&min_y, _) = self
-            .0
+            .grid
             .keys()
             .map(|(_, y)| y)
             .minmax()
             .into_option()
             .unwrap();
-        ((min_x, min_y), (max_x, self.1))
+        ((min_x, min_y), (max_x, self.floor))
     }
     fn get(&self, p: Point) -> Option<char> {
-        self.0.get(&p).copied()
+        self.grid.get(&p).copied()
+    }
+}
+impl Grid2 {
+    fn from(grid: Grid1) -> Self {
+        let ((_, _), (_, max_y)) = grid.range();
+        Self {
+            grid: grid.0,
+            floor: max_y + 2,
+        }
     }
 }
 
 fn part2(input: &str) -> usize {
     let print_enabled = std::env::var("PRINT_GRID").is_ok();
     let sand_origin = (500, 0);
-    let grid = build_grid(input);
-    let floor = grid.range().1 .1 + 2;
-    let mut grid = Grid2(grid.0, floor);
+    let mut grid = Grid2::from(build_grid(input));
     let mut count = 0;
     loop {
         if print_enabled {
