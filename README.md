@@ -15,6 +15,7 @@ Advent of Code 2022
  - [2022 Day 20](./2022/day20/src/main.rs)
  - [2022 Day 19](./2022/day19/src/main.rs)
  - [2022 Day 18](./2022/day18/src/main.rs)
+ - [2022 Day 17](./2022/day17/src/main.rs)
  - [2022 Day 16](./2022/day16/src/main.rs)
  - [2022 Day 15](./2022/day15/src/main.rs)
  - [2022 Day 14](./2022/day14/src/main.rs)
