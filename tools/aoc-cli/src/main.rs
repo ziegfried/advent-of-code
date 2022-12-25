@@ -286,7 +286,6 @@ fn execute() -> anyhow::Result<()> {
                     "--exact",
                     "--nocapture",
                 ])
-                .env("RUSTFLAGS", "-Awarnings")
                 .status()?;
         }
     };
