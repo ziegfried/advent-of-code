@@ -199,8 +199,15 @@ fn part2(input: &str) -> usize {
 }
 
 fn main() {
-    println!("Part 1: {:?}", part1(include_str!("input.txt")));
-    println!("Part 2: {:?}", part2(include_str!("input.txt")));
+    vec![
+        (1, part1 as fn(&str) -> usize),
+        (2, part2 as fn(&str) -> usize),
+    ]
+    .par_iter()
+    .map(|(part, solve)| (part, solve(include_str!("input.txt"))))
+    .for_each(|(part, result)| {
+        println!("Part {}: {}", part, result);
+    });
 }
 
 #[test]
