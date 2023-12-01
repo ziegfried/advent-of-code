@@ -5,7 +5,12 @@ My solutions to [Advent of Code](https://adventofcode.com/) problems. Written in
 ## Solutions
 
 <!-- INDEX-START -->
-Advent of Code 2022
+Advent of Code 2023
+
+ - [2023 Day 1](./2023/day01/src/main.rs)
+
+<details><summary>Advent of Code 2022</summary>
+<p>
 
  - [2022 Day 25](./2022/day25/src/main.rs)
  - [2022 Day 24](./2022/day24/src/main.rs)
@@ -33,6 +38,8 @@ Advent of Code 2022
  - [2022 Day 2](./2022/day02/src/main.rs)
  - [2022 Day 1](./2022/day01/src/main.rs)
 
+</p>
+</details>
 <details><summary>Advent of Code 2021</summary>
 <p>
 
