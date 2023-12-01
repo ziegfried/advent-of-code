@@ -1,0 +1,6 @@
+[package]
+name = "aoc-2023-day1"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
