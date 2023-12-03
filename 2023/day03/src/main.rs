@@ -12,24 +12,19 @@ fn parse_input(input: &str) -> Input {
 
 // ------------------------------------------
 
+fn adjacent_cells(row: usize, start: usize, end: usize, input: &Input) -> Vec<(usize, usize)> {
+    ((start as i32 - 1)..(end as i32 + 1))
+        .flat_map(|c| vec![(row as i32 - 1, c), (row as i32, c), (row as i32 + 1, c)])
+        .filter(|&(r, c)| r >= 0 && c >= 0 && r < input.len() as i32 && c < input[0].len() as i32)
+        .map(|(r, c)| (r as usize, c as usize))
+        .collect()
+}
+
 fn has_adjacent_symbol(row: usize, start: usize, end: usize, input: &Input) -> bool {
-    let row = row as i32;
-    let start = start as i32;
-    let end = end as i32;
-    for r in (row - 1)..=(row + 1) {
-        for c in (start - 1)..(end + 1) {
-            if r >= 0 && c >= 0 {
-                if let Some(row) = input.get(r as usize) {
-                    if let Some(&ch) = row.get(c as usize) {
-                        if ch != '.' && !ch.is_ascii_digit() {
-                            return true;
-                        }
-                    }
-                }
-            }
-        }
-    }
-    false
+    adjacent_cells(row, start, end, input)
+        .iter()
+        .map(|&(r, c)| input[r][c])
+        .any(|ch| ch != '.' && !ch.is_ascii_digit())
 }
 
 fn part1(input: &Input) -> Result {
@@ -71,24 +66,11 @@ fn test_part1() {
 // ------------------------------------------
 
 fn get_adjacent_stars(row: usize, start: usize, end: usize, input: &Input) -> Vec<(usize, usize)> {
-    let mut result = vec![];
-    let row = row as i32;
-    let start = start as i32;
-    let end = end as i32;
-    for r in (row - 1)..=(row + 1) {
-        for c in (start - 1)..(end + 1) {
-            if r >= 0 && c >= 0 {
-                if let Some(row) = input.get(r as usize) {
-                    if let Some(&ch) = row.get(c as usize) {
-                        if ch == '*' {
-                            result.push((r as usize, c as usize));
-                        }
-                    }
-                }
-            }
-        }
-    }
-    result
+    adjacent_cells(row, start, end, input)
+        .iter()
+        .filter(|&&(r, c)| input[r][c] == '*')
+        .cloned()
+        .collect()
 }
 
 fn part2(input: &Input) -> Result {
