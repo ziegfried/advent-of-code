@@ -36,8 +36,8 @@ fn test_part1() {
 
 #[derive(Debug)]
 enum Op {
-    Remove,
     Add,
+    Remove,
 }
 
 fn part2(input: &Input) -> Result {
@@ -50,13 +50,6 @@ fn part2(input: &Input) -> Result {
         };
         let h = hash(label.as_str());
         match op {
-            Op::Remove => {
-                boxes[h] = boxes[h]
-                    .iter()
-                    .filter(|(l, _)| l != &label)
-                    .cloned()
-                    .collect::<Vec<_>>();
-            }
             Op::Add => {
                 if let Some(idx) = boxes[h].iter().position(|(l, _)| l == &label) {
                     boxes[h][idx] = (label.clone(), focal_len);
@@ -64,9 +57,13 @@ fn part2(input: &Input) -> Result {
                     boxes[h].push((label.clone(), focal_len));
                 }
             }
+            Op::Remove => {
+                if let Some(idx) = boxes[h].iter().position(|(l, _)| l == &label) {
+                    boxes[h].remove(idx);
+                }
+            }
         }
     }
-
     boxes
         .iter()
         .enumerate()
