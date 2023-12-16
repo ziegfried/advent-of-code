@@ -138,6 +138,20 @@ Advent of Code 2023
 
 </p>
 </details>
+<details><summary>Advent of Code 2018</summary>
+<p>
+
+ - [2018 Day 8](./2018/day08/src/main.rs)
+ - [2018 Day 7](./2018/day07/src/main.rs)
+ - [2018 Day 6](./2018/day06/src/main.rs)
+ - [2018 Day 5](./2018/day05/src/main.rs)
+ - [2018 Day 4](./2018/day04/src/main.rs)
+ - [2018 Day 3](./2018/day03/src/main.rs)
+ - [2018 Day 2](./2018/day02/src/main.rs)
+ - [2018 Day 1](./2018/day01/src/main.rs)
+
+</p>
+</details>
 <details><summary>Advent of Code 2015</summary>
 <p>
 
