@@ -7,27 +7,44 @@
 
 // Problem: {{url}}
 
-fn part1(input: &str) -> usize {
+type Result = usize;
+
+type Input = String;
+
+fn parse_input(input: &str) -> Input {
+    input.to_string()
+}
+
+// ------------------------------------------
+
+fn part1(input: &Input) -> Result {
     todo!("part1")
 }
 
 #[test]
 fn test_part1() {
-    assert_eq!(part1(include_str!("test.txt")), todo!());
+    let input = parse_input(include_str!("test.txt"));
+    dbg!(&input);
+    assert_eq!(part1(&input), todo!());
 }
 
 // ------------------------------------------
 
-fn part2(input: &str) -> usize {
+fn part2(input: &Input) -> Result {
     todo!("part2")
 }
 
 #[test]
+#[ignore]
 fn test_part2() {
-    assert_eq!(part2(include_str!("test.txt")), todo!());
+    let input = parse_input(include_str!("test.txt"));
+    assert_eq!(part2(&input), todo!());
 }
 
+// ------------------------------------------
+
 fn main() {
-    println!("Part 1: {:?}", part1(include_str!("input.txt")));
-    println!("Part 2: {:?}", part2(include_str!("input.txt")));
+    let input = parse_input(include_str!("input.txt"));
+    println!("Part 1: {:?}", part1(&input));
+    println!("Part 2: {:?}", part2(&input));
 }

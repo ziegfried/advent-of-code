@@ -10,6 +10,8 @@ use dialoguer::Confirm;
 use std::{env, fs, process::Command};
 use structopt::StructOpt;
 
+use crate::fs_utils::copy_dir_all;
+
 #[derive(StructOpt, Debug)]
 #[structopt(name = "aoc")]
 enum Opt {
@@ -246,13 +248,7 @@ fn execute() -> anyhow::Result<()> {
             let tmpl_temp = root_dir.join("tools/aoc-cli/src/tmpl/temp");
             if tmpl_temp.is_dir() {
                 eprintln!("Copying temp dir:");
-                for file in tmpl_temp.read_dir()? {
-                    let file = file?;
-                    eprintln!(" - {:?}", file.file_name());
-                    if file.file_type()?.is_file() {
-                        fs::copy(file.path(), project_dir.join("temp").join(file.file_name()))?;
-                    }
-                }
+                copy_dir_all(tmpl_temp, project_dir.join("temp"))?;
             }
 
             if open
