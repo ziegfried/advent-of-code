@@ -53,7 +53,7 @@ impl OffsetRanges {
     }
     fn offset_at(&self, n: Int) -> Int {
         for (start, end, offset) in self.0.iter() {
-            if n >= *start && n < *end {
+            if &n >= start && &n < end {
                 return *offset;
             }
         }
@@ -109,37 +109,20 @@ fn resolve_fast(seed: Int, ranges: &Vec<OffsetRanges>) -> Int {
     cur
 }
 
-const SHOW_PROGRESS: bool = false;
-
 fn part2((seeds, maps): &Input) -> Result {
     let ranges = maps
         .iter()
         .map(|(from, to, map)| (from.clone(), to.clone(), OffsetRanges::from_map(map)))
         .collect::<Vec<_>>();
     let range_list: Vec<OffsetRanges> = ranges.iter().cloned().map(|(_, _, list)| list).collect();
-    let total: usize = seeds
-        .iter()
-        .cloned()
-        .tuples()
-        .map(|(_, count)| count as usize)
-        .sum();
-    if SHOW_PROGRESS {
-        dbg!(total);
-    }
     seeds
         .iter()
         .cloned()
         .tuples()
-        .flat_map(|(a, b)| a..(a + b))
-        .enumerate()
-        .par_bridge()
-        .map(|(n, seed)| {
-            if SHOW_PROGRESS && n % 20_000_000 == 0 {
-                let pct = (n * 100) / total;
-                dbg!(pct);
-            }
-            resolve_fast(seed, &range_list)
-        })
+        .collect::<Vec<(Int, Int)>>()
+        .par_iter()
+        .flat_map(|(a, b)| *a..(a + b))
+        .map(|seed| resolve_fast(seed, &range_list))
         .min()
         .unwrap()
 }
