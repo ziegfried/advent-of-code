@@ -1,13 +1,15 @@
 // Problem: https://adventofcode.com/2023/day/17
+
 use pathfinding::prelude::dijkstra;
 use std::collections::HashMap;
 
-type Result = usize;
+type Result = u32;
 type Point = (i32, i32);
-type Input = HashMap<Point, u32>;
+type Map = HashMap<Point, u32>;
+type Input = (Map, Point);
 
 fn parse_input(input: &str) -> Input {
-    input
+    let map = input
         .trim()
         .lines()
         .enumerate()
@@ -16,7 +18,10 @@ fn parse_input(input: &str) -> Input {
                 .enumerate()
                 .map(move |(j, ch)| ((i as i32, j as i32), ch.to_digit(10).unwrap()))
         })
-        .collect::<Input>()
+        .collect::<Map>();
+    let target_row = *map.keys().map(|(r, _)| r).max().unwrap();
+    let target_col = *map.keys().map(|(_, c)| c).max().unwrap();
+    (map, (target_row, target_col))
 }
 
 // ------------------------------------------
@@ -28,32 +33,9 @@ enum Dir {
     S,
     W,
 }
-
+use Dir::*;
 impl Dir {
-    fn all() -> Vec<Self> {
-        use Dir::*;
-        vec![N, E, S, W]
-    }
-    fn rel(&self) -> Point {
-        use Dir::*;
-        match self {
-            N => (-1, 0),
-            E => (0, 1),
-            S => (1, 0),
-            W => (0, -1),
-        }
-    }
-    fn opposite(&self) -> Self {
-        use Dir::*;
-        match self {
-            N => S,
-            E => W,
-            S => N,
-            W => E,
-        }
-    }
-    fn rot90(&self) -> Self {
-        use Dir::*;
+    fn right(&self) -> Self {
         match self {
             N => E,
             E => S,
@@ -61,48 +43,71 @@ impl Dir {
             W => N,
         }
     }
-    fn rot270(&self) -> Self {
-        self.rot90().rot90().rot90()
+    fn left(&self) -> Self {
+        self.right().right().right()
+    }
+    fn opposite(&self) -> Self {
+        self.right().right()
     }
 }
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-struct Pos((i32, i32), Option<Dir>, u32);
-
-fn successors(&Pos((r, c), dir, dir_count): &Pos, map: &Input) -> Vec<(Pos, u32)> {
-    Dir::all()
-        .iter()
-        .filter(|d| {
-            if dir_count >= 3 {
-                Some(**d) != dir
-            } else {
-                true
-            }
-        })
-        .filter(|d| Some(d.opposite()) != dir)
-        .filter_map(|d| {
-            let (dr, dc) = d.rel();
-            let p = (r + dr, c + dc);
-            map.get(&p).map(|cost| {
-                (
-                    Pos(p, Some(*d), if Some(*d) == dir { dir_count + 1 } else { 1 }),
-                    *cost,
-                )
-            })
-        })
-        .collect()
+struct Node {
+    pos: Point,
+    dir: Dir,
+    dir_count: u32,
 }
 
-fn part1(input: &Input) -> Result {
-    let target_row = *input.keys().map(|(r, _)| r).max().unwrap();
-    let target_col = *input.keys().map(|(_, c)| c).max().unwrap();
+fn next_node(node: &Node, dir: Dir, map: &Map) -> Option<(Node, u32)> {
+    let (r, c) = node.pos;
+    let pos = match dir {
+        N => (r - 1, c),
+        E => (r, c + 1),
+        S => (r + 1, c),
+        W => (r, c - 1),
+    };
+    map.get(&pos).map(|cost| {
+        (
+            Node {
+                pos,
+                dir,
+                dir_count: if dir == node.dir {
+                    node.dir_count + 1
+                } else {
+                    1
+                },
+            },
+            *cost,
+        )
+    })
+}
+
+fn successors(node: &Node, map: &Map) -> Vec<(Node, u32)> {
+    let dirs = if node.pos == (0, 0) && node.dir_count == 0 {
+        vec![next_node(node, E, map), next_node(node, S, map)]
+    } else {
+        [N, E, S, W]
+            .iter()
+            .filter(|d| node.dir != d.opposite())
+            .filter(|d| node.dir_count < 3 || **d != node.dir)
+            .map(|d| next_node(node, *d, map))
+            .collect()
+    };
+    dirs.iter().filter_map(|o| o.clone()).collect()
+}
+
+fn part1((map, target): &Input) -> Result {
     let (_, cost) = dijkstra(
-        &Pos((0, 0), None, 0),
-        |p| successors(p, input),
-        |p| p.0 == (target_row, target_col),
+        &Node {
+            pos: (0, 0),
+            dir: N,
+            dir_count: 0,
+        },
+        |node| successors(node, map),
+        |node| node.pos == *target,
     )
     .unwrap();
-    cost as usize
+    cost
 }
 
 #[test]
@@ -113,43 +118,34 @@ fn test_part1() {
 
 // ------------------------------------------
 
-fn successors2(&Pos((r, c), dir, dir_count): &Pos, map: &Input) -> Vec<(Pos, u32)> {
-    let possible_dirs = if dir.is_none() {
-        Dir::all()
-    } else if dir_count < 4 {
-        vec![dir.unwrap()]
-    } else if dir_count >= 10 {
-        let d = dir.unwrap();
-        vec![d.rot90(), d.rot270()]
+fn successors2(node: &Node, map: &Map) -> Vec<(Node, u32)> {
+    let possible_dirs = if node.pos == (0, 0) && node.dir_count == 0 {
+        vec![E, S]
+    } else if node.dir_count < 4 {
+        vec![node.dir]
+    } else if node.dir_count >= 10 {
+        vec![node.dir.right(), node.dir.left()]
     } else {
-        let d = dir.unwrap();
-        vec![d, d.rot90(), d.rot270()]
+        vec![node.dir, node.dir.right(), node.dir.left()]
     };
     possible_dirs
         .iter()
-        .filter_map(|d| {
-            let (dr, dc) = d.rel();
-            let p = (r + dr, c + dc);
-            map.get(&p).map(|cost| {
-                (
-                    Pos(p, Some(*d), if Some(*d) == dir { dir_count + 1 } else { 1 }),
-                    *cost,
-                )
-            })
-        })
+        .filter_map(|d| next_node(node, *d, map))
         .collect()
 }
 
-fn part2(input: &Input) -> Result {
-    let target_row = *input.keys().map(|(r, _)| r).max().unwrap();
-    let target_col = *input.keys().map(|(_, c)| c).max().unwrap();
+fn part2((map, target): &Input) -> Result {
     let (_, cost) = dijkstra(
-        &Pos((0, 0), None, 0),
-        |p| successors2(p, input),
-        |p| p.0 == (target_row, target_col),
+        &Node {
+            pos: (0, 0),
+            dir: N,
+            dir_count: 0,
+        },
+        |node| successors2(node, map),
+        |node| node.pos == *target,
     )
     .unwrap();
-    cost as usize
+    cost
 }
 
 #[test]
