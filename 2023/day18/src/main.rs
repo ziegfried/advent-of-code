@@ -1,12 +1,13 @@
 // Problem: https://adventofcode.com/2023/day/18
 
+use itertools::{Itertools, MinMaxResult};
+use sscanf::sscanf;
 use std::collections::HashSet;
 
-use itertools::Itertools;
-use sscanf::sscanf;
-
-type Result = usize;
+type Result = i64;
 type Point = (i64, i64);
+type Instruction = (Dir, i64, String);
+type Input = Vec<Instruction>;
 
 #[derive(Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 enum Dir {
@@ -26,10 +27,6 @@ impl Dir {
     }
 }
 use Dir::*;
-
-type Instruction = (Dir, i64, String);
-
-type Input = Vec<Instruction>;
 
 fn parse_input(input: &str) -> Input {
     input
@@ -54,26 +51,24 @@ fn parse_input(input: &str) -> Input {
 
 // ------------------------------------------
 
+fn unwrap_minmax<T: Copy>(mmr: MinMaxResult<&T>) -> (T, T) {
+    match mmr {
+        itertools::MinMaxResult::NoElements => panic!(),
+        itertools::MinMaxResult::OneElement(v) => (*v, *v),
+        itertools::MinMaxResult::MinMax(min, max) => (*min, *max),
+    }
+}
+
 fn full_surface(map: &HashSet<Point>) -> usize {
-    let (min_r, max_r) = match map.iter().map(|(r, _)| r).minmax() {
-        itertools::MinMaxResult::NoElements => panic!(),
-        itertools::MinMaxResult::OneElement(v) => (*v, *v),
-        itertools::MinMaxResult::MinMax(min, max) => (*min, *max),
-    };
-    let (min_c, max_c) = match map.iter().map(|(_, c)| c).minmax() {
-        itertools::MinMaxResult::NoElements => panic!(),
-        itertools::MinMaxResult::OneElement(v) => (*v, *v),
-        itertools::MinMaxResult::MinMax(min, max) => (*min, *max),
-    };
+    let (min_r, max_r) = unwrap_minmax(map.iter().map(|(r, _)| r).minmax());
+    let (min_c, max_c) = unwrap_minmax(map.iter().map(|(_, c)| c).minmax());
     let mut fill_map = HashSet::new();
     let mut queue = vec![(min_r - 1, min_c - 1)];
-    let lines = &((min_r - 1)..=(max_r + 1));
-    let cols = &((min_c - 1)..=(max_c + 1));
     while let Some(point) = queue.pop() {
         for dir in [Up, Down, Left, Right] {
             let next = dir.mv(point);
-            if lines.contains(&next.0)
-                && cols.contains(&next.1)
+            if ((min_r - 1)..=(max_r + 1)).contains(&next.0)
+                && ((min_c - 1)..=(max_c + 1)).contains(&next.1)
                 && !map.contains(&next)
                 && !fill_map.contains(&next)
             {
@@ -103,14 +98,12 @@ fn part1(input: &Input) -> Result {
             map.insert(cur);
         }
     }
-
-    full_surface(&map)
+    full_surface(&map) as i64
 }
 
 #[test]
 fn test_part1() {
     let input = parse_input(include_str!("test.txt"));
-    dbg!(&input);
     assert_eq!(part1(&input), 62);
 }
 
@@ -129,12 +122,15 @@ fn decode(color: &str) -> (i32, Dir) {
     )
 }
 
-fn showlace(map: &Vec<Point>) -> i64 {
-    let mut area: i64 = 0;
-    for ((r1, c1), (r2, c2)) in map.iter().tuple_windows() {
-        area += r1 * c2 - r2 * c1;
-    }
-    map.len() as i64 + area.abs() / 2 - map.len() as i64 / 2
+fn shoelace(map: &Vec<Point>) -> i64 {
+    map.iter()
+        .tuple_windows()
+        .map(|((r1, c1), (r2, c2))| r1 * c2 - r2 * c1)
+        .sum::<i64>()
+        .abs()
+        / 2
+        + map.len() as i64 / 2
+        + 1
 }
 
 fn part2(input: &Input) -> Result {
@@ -148,7 +144,7 @@ fn part2(input: &Input) -> Result {
             map.push(cur);
         }
     }
-    showlace(&map) as usize
+    shoelace(&map)
 }
 
 #[test]
