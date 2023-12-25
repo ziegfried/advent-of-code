@@ -7,6 +7,7 @@ My solutions to [Advent of Code](https://adventofcode.com/) problems. Written in
 <!-- INDEX-START -->
 Advent of Code 2023
 
+ - [2023 Day 21](./2023/day21/src/main.rs)
  - [2023 Day 20](./2023/day20/src/main.rs)
  - [2023 Day 19](./2023/day19/src/main.rs)
  - [2023 Day 18](./2023/day18/src/main.rs)
