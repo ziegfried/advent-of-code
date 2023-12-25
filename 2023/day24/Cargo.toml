@@ -1,0 +1,12 @@
+[package]
+name = "aoc"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+itertools = "*"
+sscanf = "*"
+geo = "*"
+intersect2d = "*"
+line_intersection = "*"
+z3 = { version = "*", features = ["static-link-z3"] }
